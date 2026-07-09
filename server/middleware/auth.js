@@ -20,7 +20,7 @@ const auth = (req, res, next) => {
     const decoded = jwt.verify(token, secret);
     req.user = decoded;
     next();
-  } catch (error) {
+  } catch {
     res.status(401).json({ error: "Access denied. Invalid or expired token." });
   }
 };
