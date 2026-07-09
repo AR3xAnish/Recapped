@@ -5,11 +5,13 @@ import { AuthProvider, AuthContext } from "./context/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import NewMeeting from "./pages/NewMeeting";
+import MeetingDetail from "./pages/MeetingDetail";
 
 // Signature Reusable Highlight Component
 export function Highlight({ children }) {
   return (
-    <span className="bg-highlighter-gold text-[#121922] px-1.5 py-0.5 font-medium inline-block select-all">
+    <span className="bg-highlighter-gold text-[#121922] px-1.5 py-0.5 font-medium inline-block select-all font-sans">
       {children}
     </span>
   );
@@ -41,6 +43,14 @@ function Navigation({ isDark, setIsDark }) {
               }`}
             >
               Ledger
+            </Link>
+            <Link
+              to="/meetings/new"
+              className={`transition-colors duration-200 text-sm font-semibold tracking-wide ${
+                isActive("/meetings/new") ? "text-ink-navy border-b-2 border-ink-navy pb-1" : "text-muted-sage hover:text-ink-navy"
+              }`}
+            >
+              New Entry
             </Link>
             <Link
               to="/about"
@@ -335,7 +345,7 @@ function About() {
       <div className="mt-8">
         <Link
           to="/"
-          className="border border-ink-navy text-ink-navy px-4 py-2 text-sm font-semibold hover:bg-ink-navy hover:text-paper-cream transition-colors duration-150 inline-block"
+          className="border border-ink-navy text-ink-navy px-4 py-2 text-sm font-semibold hover:bg-ink-navy hover:text-paper-cream transition-colors duration-150 inline-block cursor-pointer"
         >
           &larr; Return to Ledger
         </Link>
@@ -357,6 +367,22 @@ function AppContent({ isDark, setIsDark }) {
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/meetings/new"
+            element={
+              <ProtectedRoute>
+                <NewMeeting />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/meetings/:id"
+            element={
+              <ProtectedRoute>
+                <MeetingDetail />
               </ProtectedRoute>
             }
           />
