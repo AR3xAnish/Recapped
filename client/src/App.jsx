@@ -1,11 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from "react-router-dom";
-import axios from "axios";
+import api from "./services/api";
+import { AuthProvider, AuthContext } from "./context/AuthContext";
+import { ProtectedRoute } from "./components/ProtectedRoute";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
 
 // Signature Reusable Highlight Component
 export function Highlight({ children }) {
   return (
-    <span className="bg-highlighter-gold text-ink-navy px-1.5 py-0.5 font-medium inline-block select-all">
+    <span className="bg-highlighter-gold text-[#121922] px-1.5 py-0.5 font-medium inline-block select-all">
       {children}
     </span>
   );
@@ -14,6 +18,7 @@ export function Highlight({ children }) {
 // Navigation Bar
 function Navigation({ isDark, setIsDark }) {
   const location = useLocation();
+  const { user, logout } = useContext(AuthContext);
   const isActive = (path) => location.pathname === path;
 
   return (
@@ -27,25 +32,38 @@ function Navigation({ isDark, setIsDark }) {
         </span>
       </div>
       <div className="flex items-center space-x-8">
-        <Link
-          to="/"
-          className={`transition-colors duration-200 text-sm font-semibold tracking-wide ${
-            isActive("/") ? "text-ink-navy border-b-2 border-ink-navy pb-1" : "text-muted-sage hover:text-ink-navy"
-          }`}
-        >
-          Ledger
-        </Link>
-        <Link
-          to="/about"
-          className={`transition-colors duration-200 text-sm font-semibold tracking-wide ${
-            isActive("/about") ? "text-ink-navy border-b-2 border-ink-navy pb-1" : "text-muted-sage hover:text-ink-navy"
-          }`}
-        >
-          About Ledger
-        </Link>
+        {user && (
+          <>
+            <Link
+              to="/"
+              className={`transition-colors duration-200 text-sm font-semibold tracking-wide ${
+                isActive("/") ? "text-ink-navy border-b-2 border-ink-navy pb-1" : "text-muted-sage hover:text-ink-navy"
+              }`}
+            >
+              Ledger
+            </Link>
+            <Link
+              to="/about"
+              className={`transition-colors duration-200 text-sm font-semibold tracking-wide ${
+                isActive("/about") ? "text-ink-navy border-b-2 border-ink-navy pb-1" : "text-muted-sage hover:text-ink-navy"
+              }`}
+            >
+              About Ledger
+            </Link>
+            <span className="text-xs font-mono text-muted-sage hidden md:inline">
+              SCRIBE: <span className="text-ink-navy font-semibold">[{user.name}]</span>
+            </span>
+            <button
+              onClick={logout}
+              className="border border-ink-navy text-ink-navy px-2.5 py-1 text-xs font-mono uppercase hover:bg-ink-navy hover:text-paper-cream transition-colors duration-150 cursor-pointer"
+            >
+              Logout
+            </button>
+          </>
+        )}
         <button
           onClick={() => setIsDark(!isDark)}
-          className="border border-ink-navy text-ink-navy px-2.5 py-1.5 text-xs font-mono uppercase hover:bg-ink-navy hover:text-paper-cream transition-colors duration-150 cursor-pointer"
+          className="border border-ink-navy text-ink-navy px-2.5 py-1 text-xs font-mono uppercase hover:bg-ink-navy hover:text-paper-cream transition-colors duration-150 cursor-pointer"
         >
           Mode: {isDark ? "Dark" : "Light"}
         </button>
@@ -56,17 +74,21 @@ function Navigation({ isDark, setIsDark }) {
 
 // Dashboard component styled as a ruled ledger
 function Dashboard() {
+  const { user } = useContext(AuthContext);
   const [healthStatus, setHealthStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lastChecked, setLastChecked] = useState(null);
+  
+  // Secure route test data
+  const [secureMessage, setSecureMessage] = useState("");
+  const [secureLoading, setSecureLoading] = useState(true);
 
   const checkHealth = async () => {
     setLoading(true);
     setError(null);
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
-      const response = await axios.get(`${apiUrl}/health`);
+      const response = await api.get("/health");
       setHealthStatus(response.data);
       setLastChecked(new Date().toLocaleTimeString());
     } catch (err) {
@@ -78,8 +100,21 @@ function Dashboard() {
     }
   };
 
+  const checkSecureRoute = async () => {
+    setSecureLoading(true);
+    try {
+      const response = await api.get("/protected-test");
+      setSecureMessage(response.data.message);
+    } catch (err) {
+      setSecureMessage(err.response?.data?.error || "Failed to query protected API");
+    } finally {
+      setSecureLoading(false);
+    }
+  };
+
   useEffect(() => {
     checkHealth();
+    checkSecureRoute();
   }, []);
 
   return (
@@ -96,6 +131,34 @@ function Dashboard() {
         <p className="text-muted-sage mt-2 text-base max-w-xl font-normal leading-relaxed">
           A digitized meeting records interface. Key commitments, actions, and connections are recorded herein.
         </p>
+      </div>
+
+      {/* Scribe Access Verification Ruled Section */}
+      <div className="py-8 border-b border-muted-sage/30 space-y-4">
+        <h2 className="text-sm font-mono uppercase tracking-wider text-muted-sage mb-2">
+          Active Registry Session
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="flex justify-between items-center text-sm font-mono border-b border-muted-sage/10 pb-2">
+            <span className="text-muted-sage">SCRIBE_NAME:</span>
+            <span className="text-ink-navy font-semibold">{user?.name}</span>
+          </div>
+          <div className="flex justify-between items-center text-sm font-mono border-b border-muted-sage/10 pb-2">
+            <span className="text-muted-sage">SCRIBE_EMAIL:</span>
+            <span className="text-ink-navy font-semibold">{user?.email}</span>
+          </div>
+        </div>
+        
+        <div className="flex justify-between items-center text-sm font-mono border-b border-muted-sage/10 pb-2 pt-2">
+          <span className="text-muted-sage">SECURE_API_LINK:</span>
+          <span className="text-ink-navy">
+            {secureLoading ? (
+              <span className="animate-pulse">Accessing...</span>
+            ) : (
+              <Highlight>{secureMessage}</Highlight>
+            )}
+          </span>
+        </div>
       </div>
 
       {/* Health Check Ledger Ruled Section */}
@@ -133,7 +196,10 @@ function Dashboard() {
               )}
 
               <button
-                onClick={checkHealth}
+                onClick={() => {
+                  checkHealth();
+                  checkSecureRoute();
+                }}
                 disabled={loading}
                 className="border border-ink-navy text-ink-navy px-3 py-1.5 text-xs font-semibold hover:bg-ink-navy hover:text-paper-cream transition-colors duration-150 disabled:opacity-50 cursor-pointer"
               >
@@ -176,7 +242,7 @@ function Dashboard() {
         </div>
       </div>
 
-      {/* Info Boxes: Replaced by a simple 3-column row with sage labels & ink navy values */}
+      {/* Info Boxes */}
       <div className="py-12">
         <h2 className="text-sm font-mono uppercase tracking-wider text-muted-sage mb-6">
           Ledger Environment Metadata
@@ -278,6 +344,43 @@ function About() {
   );
 }
 
+// Root Application Layout
+function AppContent({ isDark, setIsDark }) {
+  return (
+    <div className="min-h-screen bg-paper-cream text-ink-navy flex flex-col font-sans antialiased transition-colors duration-300">
+      <Navigation isDark={isDark} setIsDark={setIsDark} />
+      <main className="flex-grow">
+        <Routes>
+          {/* Protected Routes */}
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/about"
+            element={
+              <ProtectedRoute>
+                <About />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Public Auth Routes */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+        </Routes>
+      </main>
+      <footer className="bg-paper-cream border-t border-muted-sage/20 py-8 text-center text-xs font-mono text-muted-sage transition-colors duration-300">
+        Recapped Ledger Registry &copy; {new Date().getFullYear()}
+      </footer>
+    </div>
+  );
+}
+
 export default function App() {
   const [isDark, setIsDark] = useState(() => {
     if (typeof window !== "undefined") {
@@ -298,19 +401,10 @@ export default function App() {
   }, [isDark]);
 
   return (
-    <Router>
-      <div className="min-h-screen bg-paper-cream text-ink-navy flex flex-col font-sans antialiased transition-colors duration-300">
-        <Navigation isDark={isDark} setIsDark={setIsDark} />
-        <main className="flex-grow">
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/about" element={<About />} />
-          </Routes>
-        </main>
-        <footer className="bg-paper-cream border-t border-muted-sage/20 py-8 text-center text-xs font-mono text-muted-sage transition-colors duration-300">
-          Recapped Ledger Registry &copy; {new Date().getFullYear()}
-        </footer>
-      </div>
-    </Router>
+    <AuthProvider>
+      <Router>
+        <AppContent isDark={isDark} setIsDark={setIsDark} />
+      </Router>
+    </AuthProvider>
   );
 }
