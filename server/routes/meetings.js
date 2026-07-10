@@ -30,5 +30,6 @@ router.post("/", (req, res, next) => {
 
 router.get("/:id", meetingController.getMeetingById);
 router.post("/:id/process", meetingController.processMeeting);
+router.put("/:id", meetingController.updateMeeting);
 
 module.exports = router;

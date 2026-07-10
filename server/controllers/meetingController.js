@@ -3,6 +3,7 @@ const mammoth = require("mammoth");
 const PDFParser = require("pdf2json");
 const path = require("path");
 const { extractTranscript } = require("../services/agent/extract");
+const { generateSummaryAndEmail } = require("../services/agent/summarize");
 
 const parsePdfBuffer = (buffer) => {
   return new Promise((resolve, reject) => {
@@ -141,7 +142,23 @@ exports.processMeeting = async (req, res) => {
           freshMeeting.status = "processed";
           freshMeeting.processingError = undefined;
           await freshMeeting.save();
-          console.log(`[Agent] Meeting ${freshMeeting._id} analysis completed successfully.`);
+          console.log(`[Agent] Meeting ${freshMeeting._id} extraction completed successfully.`);
+
+          // Chain summary and email generation
+          try {
+            const summaryResult = await generateSummaryAndEmail(
+              freshMeeting.rawTranscript,
+              freshMeeting.participants,
+              freshMeeting.actionItems,
+              freshMeeting.keyDecisions
+            );
+            freshMeeting.summary = summaryResult.summary;
+            freshMeeting.followUpEmail = summaryResult.followUpEmail;
+            await freshMeeting.save();
+            console.log(`[Agent] Meeting ${freshMeeting._id} summarization completed successfully.`);
+          } catch (sumError) {
+            console.error(`[Agent] Meeting ${freshMeeting._id} summarization failed:`, sumError);
+          }
         }
       })
       .catch(async (error) => {
@@ -157,5 +174,35 @@ exports.processMeeting = async (req, res) => {
   } catch (error) {
     console.error("Process Meeting Error:", error);
     res.status(500).json({ error: "Failed to trigger meeting analysis." });
+  }
+};
+
+exports.updateMeeting = async (req, res) => {
+  try {
+    const meeting = await Meeting.findById(req.params.id);
+
+    if (!meeting) {
+      return res.status(404).json({ error: "Meeting registry entry not found." });
+    }
+
+    if (meeting.owner.toString() !== req.user.id) {
+      return res.status(403).json({ error: "Access denied. You do not own this meeting registry entry." });
+    }
+
+    const { title, summary, followUpEmail } = req.body;
+
+    if (title !== undefined) meeting.title = title;
+    if (summary !== undefined) meeting.summary = summary;
+    if (followUpEmail !== undefined) {
+      meeting.followUpEmail = meeting.followUpEmail || {};
+      if (followUpEmail.subject !== undefined) meeting.followUpEmail.subject = followUpEmail.subject;
+      if (followUpEmail.body !== undefined) meeting.followUpEmail.body = followUpEmail.body;
+    }
+
+    const updated = await meeting.save();
+    res.json(updated);
+  } catch (error) {
+    console.error("Update Meeting Error:", error);
+    res.status(500).json({ error: "Failed to update meeting registry entry." });
   }
 };

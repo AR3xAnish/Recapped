@@ -40,6 +40,13 @@ const MeetingSchema = new mongoose.Schema({
   processingError: {
     type: String,
   },
+  summary: {
+    type: String,
+  },
+  followUpEmail: {
+    subject: { type: String, trim: true },
+    body: { type: String },
+  },
   owner: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
