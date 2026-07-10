@@ -44,7 +44,7 @@ function Navigation({ isDark, setIsDark }) {
                 isActive("/") ? "text-ink-navy border-b-2 border-ink-navy pb-1" : "text-muted-sage hover:text-ink-navy"
               }`}
             >
-              Ledger
+              Home
             </Link>
             <Link
               to="/board"
@@ -100,207 +100,119 @@ function Navigation({ isDark, setIsDark }) {
   );
 }
 
-// Dashboard component styled as a ruled ledger
+// Clean Dashboard Home component with quick shortcuts and recent logs
 function Dashboard() {
   const { user } = useContext(AuthContext);
-  const [healthStatus, setHealthStatus] = useState(null);
+  const [recentMeetings, setRecentMeetings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [lastChecked, setLastChecked] = useState(null);
-  
-  // Secure route test data
-  const [secureMessage, setSecureMessage] = useState("");
-  const [secureLoading, setSecureLoading] = useState(true);
-
-  const checkHealth = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await api.get("/health");
-      setHealthStatus(response.data);
-      setLastChecked(new Date().toLocaleTimeString());
-    } catch (err) {
-      setError(err.message || "Connection refused");
-      setHealthStatus(null);
-      setLastChecked(new Date().toLocaleTimeString());
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const checkSecureRoute = async () => {
-    setSecureLoading(true);
-    try {
-      const response = await api.get("/protected-test");
-      setSecureMessage(response.data.message);
-    } catch (err) {
-      setSecureMessage(err.response?.data?.error || "Failed to query protected API");
-    } finally {
-      setSecureLoading(false);
-    }
-  };
 
   useEffect(() => {
-    checkHealth();
-    checkSecureRoute();
+    const fetchRecent = async () => {
+      try {
+        const response = await api.get("/meetings", { params: { limit: 5 } });
+        setRecentMeetings(response.data.meetings);
+      } catch (err) {
+        setError(err.response?.data?.error || "Failed to load recent logs.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchRecent();
   }, []);
 
   return (
     <div className="max-w-4xl mx-auto py-16 px-8">
-      {/* Ledger Header */}
+      {/* Header */}
       <div className="pb-8 border-b border-muted-sage/30">
-        <div className="flex items-center justify-between text-xs font-mono text-muted-sage">
-          <span>PAGE NO: 01</span>
-          <span>DATE: {new Date().toLocaleDateString()}</span>
-        </div>
-        <h1 className="text-3xl font-extrabold text-ink-navy mt-4 tracking-tight">
-          Meeting Minutes & Commitments Ledger
+        <h1 className="text-3xl font-extrabold text-ink-navy tracking-tight">
+          Welcome, {user?.name}
         </h1>
         <p className="text-muted-sage mt-2 text-base max-w-xl font-normal leading-relaxed">
-          A digitized meeting records interface. Key commitments, actions, and connections are recorded herein.
+          Recapped is your digitized meeting ledger. Capture transcript logs, analyze commitments, and manage action items.
         </p>
       </div>
 
-      {/* Scribe Access Verification Ruled Section */}
-      <div className="py-8 border-b border-muted-sage/30 space-y-4">
-        <h2 className="text-sm font-mono uppercase tracking-wider text-muted-sage mb-2">
-          Active Registry Session
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="flex justify-between items-center text-sm font-mono border-b border-muted-sage/10 pb-2">
-            <span className="text-muted-sage">SCRIBE_NAME:</span>
-            <span className="text-ink-navy font-semibold">{user?.name}</span>
-          </div>
-          <div className="flex justify-between items-center text-sm font-mono border-b border-muted-sage/10 pb-2">
-            <span className="text-muted-sage">SCRIBE_EMAIL:</span>
-            <span className="text-ink-navy font-semibold">{user?.email}</span>
-          </div>
-        </div>
-        
-        <div className="flex justify-between items-center text-sm font-mono border-b border-muted-sage/10 pb-2 pt-2">
-          <span className="text-muted-sage">SECURE_API_LINK:</span>
-          <span className="text-ink-navy">
-            {secureLoading ? (
-              <span className="animate-pulse">Accessing...</span>
-            ) : (
-              <Highlight>{secureMessage}</Highlight>
-            )}
-          </span>
-        </div>
-      </div>
-
-      {/* Health Check Ledger Ruled Section */}
+      {/* Quick Actions Shortcuts */}
       <div className="py-8 border-b border-muted-sage/30">
-        <h2 className="text-sm font-mono uppercase tracking-wider text-muted-sage mb-6">
-          System Verification Logs
+        <h2 className="text-xs font-mono uppercase tracking-wider text-muted-sage mb-4">
+          Quick ledger commands
         </h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Link
+            to="/meetings/new"
+            className="border border-ink-navy text-ink-navy p-6 hover:bg-ink-navy hover:text-paper-cream transition-colors duration-150 text-center cursor-pointer"
+          >
+            <span className="block font-mono text-xs uppercase tracking-wider text-muted-sage mb-2">Command 01</span>
+            <span className="text-base font-bold">[ Record New Entry ]</span>
+          </Link>
+          
+          <Link
+            to="/board"
+            className="border border-ink-navy text-ink-navy p-6 hover:bg-ink-navy hover:text-paper-cream transition-colors duration-150 text-center cursor-pointer"
+          >
+            <span className="block font-mono text-xs uppercase tracking-wider text-muted-sage mb-2">Command 02</span>
+            <span className="text-base font-bold">[ View Action Board ]</span>
+          </Link>
 
-        <div className="space-y-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex items-center space-x-4">
-              <span className="text-xs font-mono text-muted-sage">LOG_01:</span>
-              <span className="text-base font-semibold text-ink-navy">
-                Backend Status Link
-              </span>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              {loading ? (
-                <span className="text-xs font-mono text-muted-sage animate-pulse">
-                  Querying server...
-                </span>
-              ) : error ? (
-                <div className="flex items-center space-x-2">
-                  <span className="text-xs font-mono text-muted-sage mr-2">Status:</span>
-                  <span className="bg-red-100 text-red-800 px-2 py-0.5 text-xs font-mono uppercase tracking-wide">
-                    Offline
-                  </span>
-                </div>
-              ) : (
-                <div className="flex items-center space-x-2">
-                  <span className="text-xs font-mono text-muted-sage mr-2">Status:</span>
-                  <Highlight>Backend Online</Highlight>
-                </div>
-              )}
-
-              <button
-                onClick={() => {
-                  checkHealth();
-                  checkSecureRoute();
-                }}
-                disabled={loading}
-                className="border border-ink-navy text-ink-navy px-3 py-1.5 text-xs font-semibold hover:bg-ink-navy hover:text-paper-cream transition-colors duration-150 disabled:opacity-50 cursor-pointer"
-              >
-                Refresh Log
-              </button>
-            </div>
-          </div>
-
-          {/* Raw Log Details Rectangular Border */}
-          <div className="border border-muted-sage/30 p-5 bg-paper-cream/40 font-mono text-xs">
-            <div className="flex justify-between text-muted-sage border-b border-muted-sage/20 pb-2 mb-3">
-              <span>METADATA</span>
-              <span>VALUE</span>
-            </div>
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-muted-sage">Target URI:</span>
-                <span className="text-ink-navy">
-                  {import.meta.env.VITE_API_URL || "http://localhost:5000/api"}/health
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-sage">Last Pinged:</span>
-                <span className="text-ink-navy">{lastChecked || "Never"}</span>
-              </div>
-              <div className="flex justify-between items-start">
-                <span className="text-muted-sage">Response Data:</span>
-                <span className="text-ink-navy font-semibold text-right max-w-md break-all">
-                  {loading ? (
-                    "..."
-                  ) : error ? (
-                    <span className="text-red-700">{error}</span>
-                  ) : (
-                    JSON.stringify(healthStatus)
-                  )}
-                </span>
-              </div>
-            </div>
-          </div>
+          <Link
+            to="/history"
+            className="border border-ink-navy text-ink-navy p-6 hover:bg-ink-navy hover:text-paper-cream transition-colors duration-150 text-center cursor-pointer"
+          >
+            <span className="block font-mono text-xs uppercase tracking-wider text-muted-sage mb-2">Command 03</span>
+            <span className="text-base font-bold">[ Browse History ]</span>
+          </Link>
         </div>
       </div>
 
-      {/* Info Boxes */}
-      <div className="py-12">
-        <h2 className="text-sm font-mono uppercase tracking-wider text-muted-sage mb-6">
-          Ledger Environment Metadata
+      {/* Recent Activity */}
+      <div className="py-8">
+        <h2 className="text-xs font-mono uppercase tracking-wider text-muted-sage mb-6">
+          Recent ledger records
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-4 border-t border-muted-sage/30 pt-8">
-          <div>
-            <span className="text-xs font-mono uppercase tracking-wider text-muted-sage block mb-1">
-              Frontend Framework
-            </span>
-            <span className="text-base font-semibold text-ink-navy font-mono">
-              React 19 + Vite
-            </span>
+
+        {error && (
+          <div className="bg-red-500/10 border border-red-500/20 text-red-700 p-4 text-xs font-mono mb-4">
+            ERROR LOADING RECORDS: {error}
           </div>
-          <div>
-            <span className="text-xs font-mono uppercase tracking-wider text-muted-sage block mb-1">
-              Styling Specification
-            </span>
-            <span className="text-base font-semibold text-ink-navy font-mono">
-              Tailwind CSS v4
-            </span>
+        )}
+
+        {loading ? (
+          <div className="text-xs font-mono text-muted-sage py-8">[ Querying records... ]</div>
+        ) : recentMeetings.length > 0 ? (
+          <div className="border border-muted-sage/30 bg-paper-cream/40 p-5">
+            <table className="w-full text-left border-collapse text-xs font-mono">
+              <thead>
+                <tr className="text-muted-sage border-b border-muted-sage/20 pb-2">
+                  <th className="pb-2 font-mono font-normal">MEETING TITLE</th>
+                  <th className="pb-2 font-mono font-normal">DATE RECORDED</th>
+                  <th className="pb-2 font-mono font-normal text-right">STATUS</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-muted-sage/10 text-ink-navy">
+                {recentMeetings.map((meeting) => (
+                  <tr key={meeting._id} className="hover:bg-ink-navy/5 transition-colors duration-150">
+                    <td className="py-3 pr-4 font-sans text-sm font-semibold">
+                      <Link to={`/meetings/${meeting._id}`} className="hover:underline">
+                        {meeting.title}
+                      </Link>
+                    </td>
+                    <td className="py-3 pr-4 text-muted-sage">
+                      {new Date(meeting.date).toLocaleDateString()}
+                    </td>
+                    <td className="py-3 text-right">
+                      <Highlight>{meeting.status}</Highlight>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-          <div>
-            <span className="text-xs font-mono uppercase tracking-wider text-muted-sage block mb-1">
-              State & Fetching
-            </span>
-            <span className="text-base font-semibold text-ink-navy font-mono">
-              Router + Axios
-            </span>
+        ) : (
+          <div className="text-xs font-mono text-muted-sage/60 italic py-8">
+            [ No meeting records exist in the ledger database. ]
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
