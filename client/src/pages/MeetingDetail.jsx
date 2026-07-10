@@ -10,6 +10,13 @@ export default function MeetingDetail() {
   const [error, setError] = useState(null);
   const [processing, setProcessing] = useState(false);
 
+  // Edit recap states
+  const [editedSubject, setEditedSubject] = useState("");
+  const [editedBody, setEditedBody] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [copied, setCopied] = useState(false);
+
   const fetchMeeting = useCallback(async (showLoading = false) => {
     if (showLoading) setLoading(true);
     try {
@@ -55,6 +62,14 @@ export default function MeetingDetail() {
     };
   }, [meetingStatus, id]);
 
+  // Initialize edit states when meeting details load or finish processing
+  useEffect(() => {
+    if (meeting?.followUpEmail) {
+      setEditedSubject(meeting.followUpEmail.subject || "");
+      setEditedBody(meeting.followUpEmail.body || "");
+    }
+  }, [meeting?._id, meeting?.status, meeting?.followUpEmail]);
+
   const handleProcess = async () => {
     try {
       setError(null);
@@ -65,6 +80,33 @@ export default function MeetingDetail() {
       setError(err.response?.data?.error || "Failed to trigger meeting analysis.");
       setProcessing(false);
     }
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    setSaveSuccess(false);
+    try {
+      const response = await api.put(`/meetings/${id}`, {
+        followUpEmail: {
+          subject: editedSubject,
+          body: editedBody,
+        },
+      });
+      setMeeting(response.data);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (err) {
+      setError(err.response?.data?.error || "Failed to save recap modifications.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCopy = () => {
+    const recapText = `Subject: ${editedSubject}\n\n${editedBody}`;
+    navigator.clipboard.writeText(recapText);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   if (loading) {
@@ -140,6 +182,73 @@ export default function MeetingDetail() {
       {/* Grid of Results (if processed) */}
       {meeting.status === "processed" && (
         <div className="space-y-12 mb-12">
+          
+          {/* Executive Summary */}
+          {meeting.summary && (
+            <div className="pb-8 border-b border-muted-sage/30">
+              <h2 className="text-sm font-mono uppercase tracking-wider text-muted-sage mb-4">
+                Executive Ledger Summary
+              </h2>
+              <div className="border-l-4 border-ink-navy pl-4 py-1 italic text-base leading-relaxed text-ink-navy">
+                {meeting.summary}
+              </div>
+            </div>
+          )}
+
+          {/* Scribe Recap Draft: Follow-Up Email */}
+          {meeting.followUpEmail && (
+            <div className="pb-8 border-b border-muted-sage/30 space-y-4">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <h2 className="text-sm font-mono uppercase tracking-wider text-muted-sage">
+                  Scribe recap draft: follow-up email
+                </h2>
+                <div className="flex items-center space-x-3">
+                  {saveSuccess && (
+                    <span className="text-xs font-mono text-emerald-700 mr-2">
+                      [ Saved successfully ]
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleCopy}
+                    className="border border-ink-navy text-ink-navy px-3 py-1 text-xs font-mono uppercase hover:bg-ink-navy hover:text-paper-cream transition-colors duration-150 cursor-pointer"
+                  >
+                    {copied ? "[ Copied! ]" : "Copy Email"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="border border-ink-navy bg-ink-navy text-paper-cream px-3 py-1 text-xs font-mono uppercase hover:bg-transparent hover:text-ink-navy transition-colors duration-150 cursor-pointer disabled:opacity-50"
+                  >
+                    {saving ? "[ Saving... ]" : "Save Changes"}
+                  </button>
+                </div>
+              </div>
+
+              <div className="border border-muted-sage/30 p-5 bg-paper-cream/40 space-y-4">
+                <div className="flex flex-col space-y-1">
+                  <label className="text-[10px] uppercase font-mono text-muted-sage">Subject Line</label>
+                  <input
+                    type="text"
+                    value={editedSubject}
+                    onChange={(e) => setEditedSubject(e.target.value)}
+                    className="bg-transparent border border-muted-sage/20 px-3 py-2 text-sm text-ink-navy font-semibold focus:outline-none focus:border-ink-navy"
+                  />
+                </div>
+                <div className="flex flex-col space-y-1">
+                  <label className="text-[10px] uppercase font-mono text-muted-sage">Email Body</label>
+                  <textarea
+                    rows={12}
+                    value={editedBody}
+                    onChange={(e) => setEditedBody(e.target.value)}
+                    className="bg-transparent border border-muted-sage/20 px-3 py-2 text-sm text-ink-navy font-mono leading-relaxed focus:outline-none focus:border-ink-navy whitespace-pre-wrap"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Participants */}
           <div className="pb-8 border-b border-muted-sage/30">
             <h2 className="text-sm font-mono uppercase tracking-wider text-muted-sage mb-4">
