@@ -7,6 +7,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import NewMeeting from "./pages/NewMeeting";
 import MeetingDetail from "./pages/MeetingDetail";
+import Board from "./pages/Board";
 
 // Signature Reusable Highlight Component
 export function Highlight({ children }) {
@@ -43,6 +44,14 @@ function Navigation({ isDark, setIsDark }) {
               }`}
             >
               Ledger
+            </Link>
+            <Link
+              to="/board"
+              className={`transition-colors duration-200 text-sm font-semibold tracking-wide ${
+                isActive("/board") ? "text-ink-navy border-b-2 border-ink-navy pb-1" : "text-muted-sage hover:text-ink-navy"
+              }`}
+            >
+              Board
             </Link>
             <Link
               to="/meetings/new"
@@ -367,6 +376,14 @@ function AppContent({ isDark, setIsDark }) {
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/board"
+            element={
+              <ProtectedRoute>
+                <Board />
               </ProtectedRoute>
             }
           />
