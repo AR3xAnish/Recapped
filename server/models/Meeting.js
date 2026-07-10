@@ -20,6 +20,26 @@ const MeetingSchema = new mongoose.Schema({
     enum: ["uploaded", "processing", "processed", "failed"],
     default: "uploaded",
   },
+  participants: [
+    {
+      name: { type: String, trim: true },
+      role: { type: String, trim: true },
+    },
+  ],
+  actionItems: [
+    {
+      description: { type: String, trim: true },
+      owner: { type: String, trim: true },
+      deadline: { type: String, trim: true },
+      confidence: { type: String, enum: ["high", "medium", "low"] },
+    },
+  ],
+  keyDecisions: [
+    { type: String, trim: true },
+  ],
+  processingError: {
+    type: String,
+  },
   owner: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",

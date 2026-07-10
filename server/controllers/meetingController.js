@@ -2,6 +2,7 @@ const Meeting = require("../models/Meeting");
 const mammoth = require("mammoth");
 const PDFParser = require("pdf2json");
 const path = require("path");
+const { extractTranscript } = require("../services/agent/extract");
 
 const parsePdfBuffer = (buffer) => {
   return new Promise((resolve, reject) => {
@@ -104,5 +105,57 @@ exports.getMeetingById = async (req, res) => {
   } catch (error) {
     console.error("Get Meeting Error:", error);
     res.status(500).json({ error: "Internal Server Error fetching meeting entry." });
+  }
+};
+
+exports.processMeeting = async (req, res) => {
+  try {
+    const meeting = await Meeting.findById(req.params.id);
+
+    if (!meeting) {
+      return res.status(404).json({ error: "Meeting registry entry not found." });
+    }
+
+    if (meeting.owner.toString() !== req.user.id) {
+      return res.status(403).json({ error: "Access denied. You do not own this meeting registry entry." });
+    }
+
+    if (meeting.status === "processing") {
+      return res.status(400).json({ error: "This meeting registry entry is already being processed." });
+    }
+
+    meeting.status = "processing";
+    meeting.processingError = undefined;
+    await meeting.save();
+
+    res.json({ message: "Meeting analysis started.", status: "processing" });
+
+    // Run extraction asynchronously in background
+    extractTranscript(meeting.rawTranscript)
+      .then(async (result) => {
+        const freshMeeting = await Meeting.findById(meeting._id);
+        if (freshMeeting) {
+          freshMeeting.participants = result.participants;
+          freshMeeting.actionItems = result.actionItems;
+          freshMeeting.keyDecisions = result.keyDecisions;
+          freshMeeting.status = "processed";
+          freshMeeting.processingError = undefined;
+          await freshMeeting.save();
+          console.log(`[Agent] Meeting ${freshMeeting._id} analysis completed successfully.`);
+        }
+      })
+      .catch(async (error) => {
+        const freshMeeting = await Meeting.findById(meeting._id);
+        if (freshMeeting) {
+          freshMeeting.status = "failed";
+          freshMeeting.processingError = error.message || "Unknown analysis error.";
+          await freshMeeting.save();
+          console.error(`[Agent] Meeting ${freshMeeting._id} analysis failed:`, error);
+        }
+      });
+
+  } catch (error) {
+    console.error("Process Meeting Error:", error);
+    res.status(500).json({ error: "Failed to trigger meeting analysis." });
   }
 };

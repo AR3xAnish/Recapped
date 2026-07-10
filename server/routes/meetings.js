@@ -29,5 +29,6 @@ router.post("/", (req, res, next) => {
 }, meetingController.createMeeting);
 
 router.get("/:id", meetingController.getMeetingById);
+router.post("/:id/process", meetingController.processMeeting);
 
 module.exports = router;
