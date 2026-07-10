@@ -28,6 +28,7 @@ router.post("/", (req, res, next) => {
   });
 }, meetingController.createMeeting);
 
+router.get("/", meetingController.getMeetings);
 router.get("/:id", meetingController.getMeetingById);
 router.post("/:id/process", meetingController.processMeeting);
 router.put("/:id", meetingController.updateMeeting);

@@ -67,4 +67,6 @@ const MeetingSchema = new mongoose.Schema({
   },
 });
 
+MeetingSchema.index({ title: "text", "participants.name": "text" });
+
 module.exports = mongoose.model("Meeting", MeetingSchema);

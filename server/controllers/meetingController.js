@@ -280,3 +280,55 @@ exports.updateActionItemStatus = async (req, res) => {
     res.status(500).json({ error: "Failed to update action item." });
   }
 };
+
+exports.getMeetings = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const search = req.query.search;
+    const sortBy = req.query.sortBy || "date";
+
+    let query = { owner: req.user.id };
+
+    if (search && search.trim() !== "") {
+      query.$text = { $search: search };
+    }
+
+    let sortOption = {};
+    if (sortBy === "title") {
+      sortOption.title = 1;
+    } else {
+      sortOption.createdAt = -1;
+    }
+
+    const skip = (page - 1) * limit;
+
+    const total = await Meeting.countDocuments(query);
+    const meetings = await Meeting.find(query)
+      .sort(sortOption)
+      .skip(skip)
+      .limit(limit);
+
+    const data = meetings.map((meeting) => ({
+      _id: meeting._id,
+      title: meeting.title,
+      date: meeting.createdAt,
+      status: meeting.status,
+      participantCount: meeting.participants ? meeting.participants.length : 0,
+      actionItemCount: meeting.actionItems ? meeting.actionItems.length : 0,
+    }));
+
+    res.json({
+      meetings: data,
+      pagination: {
+        total,
+        page,
+        limit,
+        pages: Math.ceil(total / limit),
+      },
+    });
+  } catch (error) {
+    console.error("Get Meetings Error:", error);
+    res.status(500).json({ error: "Failed to fetch meeting history logs." });
+  }
+};
