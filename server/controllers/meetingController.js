@@ -137,7 +137,11 @@ exports.processMeeting = async (req, res) => {
         const freshMeeting = await Meeting.findById(meeting._id);
         if (freshMeeting) {
           freshMeeting.participants = result.participants;
-          freshMeeting.actionItems = result.actionItems;
+          freshMeeting.actionItems = result.actionItems.map((item) => ({
+            ...item,
+            status: "todo",
+            meetingId: freshMeeting._id,
+          }));
           freshMeeting.keyDecisions = result.keyDecisions;
           freshMeeting.status = "processed";
           freshMeeting.processingError = undefined;
@@ -204,5 +208,75 @@ exports.updateMeeting = async (req, res) => {
   } catch (error) {
     console.error("Update Meeting Error:", error);
     res.status(500).json({ error: "Failed to update meeting registry entry." });
+  }
+};
+
+exports.getActionItems = async (req, res) => {
+  try {
+    const { status, owner } = req.query;
+
+    const meetings = await Meeting.find({ owner: req.user.id });
+
+    let flattened = [];
+    meetings.forEach((meeting) => {
+      meeting.actionItems.forEach((item) => {
+        flattened.push({
+          _id: item._id,
+          id: item._id,
+          meetingId: meeting._id,
+          meetingTitle: meeting.title,
+          description: item.description,
+          owner: item.owner || "Unassigned",
+          deadline: item.deadline || "",
+          confidence: item.confidence,
+          status: item.status || "todo",
+        });
+      });
+    });
+
+    if (status) {
+      flattened = flattened.filter((item) => item.status === status);
+    }
+    if (owner) {
+      flattened = flattened.filter(
+        (item) => item.owner.toLowerCase() === owner.toLowerCase()
+      );
+    }
+
+    res.json(flattened);
+  } catch (error) {
+    console.error("Get Action Items Error:", error);
+    res.status(500).json({ error: "Failed to fetch action items." });
+  }
+};
+
+exports.updateActionItemStatus = async (req, res) => {
+  try {
+    const { meetingId, itemId } = req.params;
+    const { status, owner, deadline } = req.body;
+
+    const meeting = await Meeting.findById(meetingId);
+    if (!meeting) {
+      return res.status(404).json({ error: "Meeting registry entry not found." });
+    }
+
+    if (meeting.owner.toString() !== req.user.id) {
+      return res.status(403).json({ error: "Access denied." });
+    }
+
+    const actionItem = meeting.actionItems.id(itemId);
+    if (!actionItem) {
+      return res.status(404).json({ error: "Action item not found in this meeting." });
+    }
+
+    if (status !== undefined) actionItem.status = status;
+    if (owner !== undefined) actionItem.owner = owner;
+    if (deadline !== undefined) actionItem.deadline = deadline;
+
+    await meeting.save();
+    res.json(actionItem);
+  } catch (error) {
+    console.error("Update Action Item Error:", error);
+    res.status(500).json({ error: "Failed to update action item." });
   }
 };

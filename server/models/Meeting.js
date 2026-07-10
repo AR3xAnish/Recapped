@@ -32,6 +32,15 @@ const MeetingSchema = new mongoose.Schema({
       owner: { type: String, trim: true },
       deadline: { type: String, trim: true },
       confidence: { type: String, enum: ["high", "medium", "low"] },
+      status: {
+        type: String,
+        enum: ["todo", "in_progress", "done"],
+        default: "todo",
+      },
+      meetingId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Meeting",
+      },
     },
   ],
   keyDecisions: [

@@ -3,6 +3,7 @@ const router = express.Router();
 const healthRouter = require("./health");
 const authRouter = require("./auth");
 const meetingsRouter = require("./meetings");
+const actionItemsRouter = require("./actionItems");
 const auth = require("../middleware/auth");
 
 // Public routes
@@ -14,6 +15,7 @@ router.use(auth);
 
 // Protected routes
 router.use("/meetings", meetingsRouter);
+router.use("/action-items", actionItemsRouter);
 router.get("/protected-test", (req, res) => {
   res.json({ message: "You are authenticated!", user: req.user });
 });
