@@ -233,14 +233,31 @@ export default function Settings() {
             <p className="text-sm text-muted-sage leading-relaxed font-sans">
               Connect your Notion workspace to dynamically export extracted meeting minutes, action items, owner assignments, and deadlines as structured pages.
             </p>
-            <div className="pt-4">
-              <button
-                type="button"
-                onClick={handleConnect}
-                className="border border-ink-navy text-ink-navy px-6 py-3 text-sm font-bold tracking-wide hover:bg-ink-navy hover:text-paper-cream transition-colors duration-150 cursor-pointer"
-              >
-                CONNECT NOTION ACCOUNT
-              </button>
+            <div className="pt-4 flex flex-col space-y-4">
+              <div>
+                <button
+                  type="button"
+                  onClick={handleConnect}
+                  className="border border-ink-navy text-ink-navy px-6 py-3 text-sm font-bold tracking-wide hover:bg-ink-navy hover:text-paper-cream transition-colors duration-150 cursor-pointer font-sans"
+                >
+                  CONNECT NOTION ACCOUNT
+                </button>
+              </div>
+
+              <div className="border border-dashed border-muted-sage/40 bg-paper-cream/30 p-5 font-mono text-xs text-muted-sage space-y-2 max-w-xl">
+                <span className="font-bold text-ink-navy uppercase block">Setup Instructions Guide</span>
+                <p className="leading-relaxed font-sans text-xs">
+                  When the Notion authorization consent page loads:
+                </p>
+                <ol className="list-decimal list-inside space-y-1 pl-1 font-sans text-xs">
+                  <li>Select the workspace you want to connect.</li>
+                  <li>Click <strong>Select Pages</strong> and select at least one parent page to share.<br /> (Create a new page in Notion) </li>
+                  <li>Grant permissions to finish the connection.</li>
+                </ol>
+                <p className="leading-relaxed font-sans text-xs pt-1 border-t border-muted-sage/10">
+                  Recapped will automatically create a database named <strong>&quot;Recapped Action Items&quot;</strong> under the shared page so that page exports work instantly without manual configuration.
+                </p>
+              </div>
             </div>
           </div>
         )}
