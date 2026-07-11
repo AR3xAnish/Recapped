@@ -9,6 +9,7 @@ import NewMeeting from "./pages/NewMeeting";
 import MeetingDetail from "./pages/MeetingDetail";
 import Board from "./pages/Board";
 import HistoryPage from "./pages/HistoryPage";
+import Settings from "./pages/Settings";
 
 // Signature Reusable Highlight Component
 export function Highlight({ children }) {
@@ -70,7 +71,14 @@ function Navigation({ isDark, setIsDark }) {
             >
               History
             </Link>
-            
+            <Link
+              to="/settings"
+              className={`transition-colors duration-200 text-sm font-semibold tracking-wide ${
+                isActive("/settings") ? "text-ink-navy border-b-2 border-ink-navy pb-1" : "text-muted-sage hover:text-ink-navy"
+              }`}
+            >
+              Settings
+            </Link>
             <Link
               to="/about"
               className={`transition-colors duration-200 text-sm font-semibold tracking-wide ${
@@ -314,6 +322,14 @@ function AppContent({ isDark, setIsDark }) {
             element={
               <ProtectedRoute>
                 <HistoryPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <Settings />
               </ProtectedRoute>
             }
           />

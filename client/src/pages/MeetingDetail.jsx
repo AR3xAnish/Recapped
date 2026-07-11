@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import api from "../services/api";
 import { Highlight } from "../App";
 
 export default function MeetingDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [meeting, setMeeting] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -17,6 +18,11 @@ export default function MeetingDetail() {
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  // Notion integration states
+  const [notionStatus, setNotionStatus] = useState({ connected: false, databaseId: null });
+  const [exportStates, setExportStates] = useState({});
+  const [bulkExportLoading, setBulkExportLoading] = useState(false);
 
   const fetchMeeting = useCallback(async (showLoading = false) => {
     if (showLoading) setLoading(true);
@@ -33,6 +39,66 @@ export default function MeetingDetail() {
   useEffect(() => {
     fetchMeeting(true);
   }, [id, fetchMeeting]);
+
+  useEffect(() => {
+    const checkNotionStatus = async () => {
+      try {
+        const res = await api.get("/integrations/notion/status");
+        setNotionStatus(res.data);
+      } catch (err) {
+        console.error("Failed to query Notion status:", err);
+      }
+    };
+    checkNotionStatus();
+  }, []);
+
+  const handleExportItem = async (itemId) => {
+    setExportStates((prev) => ({ ...prev, [itemId]: "loading" }));
+    try {
+      await api.post(`/action-items/${itemId}/export`);
+      setExportStates((prev) => ({ ...prev, [itemId]: "success" }));
+    } catch (err) {
+      console.error("Failed to export action item:", err);
+      if (
+        err.response?.status === 401 ||
+        err.response?.data?.code === "NOTION_UNAUTHORIZED"
+      ) {
+        alert(
+          "Notion authentication has expired or been revoked. Redirecting to Settings sheet..."
+        );
+        navigate("/settings");
+      } else {
+        setExportStates((prev) => ({ ...prev, [itemId]: "failed" }));
+      }
+    }
+  };
+
+  const handleExportAll = async () => {
+    setBulkExportLoading(true);
+    try {
+      const response = await api.post(`/meetings/${id}/export-all`);
+      const newStates = {};
+      response.data.forEach((res) => {
+        newStates[res.itemId] = res.status === "success" ? "success" : "failed";
+      });
+      setExportStates((prev) => ({ ...prev, ...newStates }));
+    } catch (err) {
+      console.error("Failed to export all action items:", err);
+      if (
+        err.response?.status === 401 ||
+        err.response?.data?.code === "NOTION_UNAUTHORIZED"
+      ) {
+        alert(
+          "Notion authentication has expired or been revoked. Redirecting to Settings sheet..."
+        );
+        navigate("/settings");
+      } else {
+        alert(err.response?.data?.error || "Failed to bulk export action items.");
+      }
+    } finally {
+      setBulkExportLoading(false);
+    }
+  };
 
   // Polling for processing status
   const meetingStatus = meeting?.status;
@@ -329,9 +395,33 @@ export default function MeetingDetail() {
 
           {/* Action Items */}
           <div className="pb-8 border-b border-muted-sage/30">
-            <h2 className="text-sm font-mono uppercase tracking-wider text-muted-sage mb-4">
-              Extracted Action Items & Commitments
-            </h2>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+              <h2 className="text-sm font-mono uppercase tracking-wider text-muted-sage">
+                Extracted Action Items & Commitments
+              </h2>
+              {meeting.actionItems && meeting.actionItems.length > 0 && (
+                <div>
+                  {!notionStatus.connected || !notionStatus.databaseId ? (
+                    <Link
+                      to="/settings"
+                      className="text-xs font-mono text-muted-sage underline hover:text-ink-navy"
+                    >
+                      [ Connect Notion database to export all ]
+                    </Link>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleExportAll}
+                      disabled={bulkExportLoading}
+                      className="border border-ink-navy text-ink-navy px-3 py-1 text-xs font-mono uppercase hover:bg-ink-navy hover:text-paper-cream transition-colors duration-150 cursor-pointer disabled:opacity-50"
+                    >
+                      {bulkExportLoading ? "Exporting all..." : "Export all to Notion"}
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+
             {meeting.actionItems && meeting.actionItems.length > 0 ? (
               <div className="border border-muted-sage/30 p-5 bg-paper-cream/40 overflow-x-auto">
                 <table className="w-full text-left border-collapse text-xs font-mono">
@@ -340,7 +430,8 @@ export default function MeetingDetail() {
                       <th className="pb-2 font-mono font-normal">TASK DESCRIPTION</th>
                       <th className="pb-2 font-mono font-normal">OWNER</th>
                       <th className="pb-2 font-mono font-normal">DEADLINE</th>
-                      <th className="pb-2 font-mono font-normal text-right">CONFIDENCE</th>
+                      <th className="pb-2 font-mono font-normal">CONFIDENCE</th>
+                      <th className="pb-2 font-mono font-normal text-right">NOTION EXPORT</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-muted-sage/10 text-ink-navy">
@@ -355,7 +446,7 @@ export default function MeetingDetail() {
                         </td>
                         <td className="py-3 pr-4 font-semibold">{item.owner}</td>
                         <td className="py-3 pr-4">{item.deadline || "—"}</td>
-                        <td className="py-3 text-right">
+                        <td className="py-3 pr-4">
                           <span className={`px-1.5 py-0.5 uppercase text-[10px] border ${
                             item.confidence === "high"
                               ? "border-emerald-500 text-emerald-800 dark:text-emerald-400"
@@ -365,6 +456,40 @@ export default function MeetingDetail() {
                           }`}>
                             {item.confidence}
                           </span>
+                        </td>
+                        <td className="py-3 text-right font-mono">
+                          {!notionStatus.connected || !notionStatus.databaseId ? (
+                            <span className="text-muted-sage/50 text-[10px] italic">Not connected</span>
+                          ) : (
+                            <div className="inline-flex items-center justify-end space-x-2">
+                              {exportStates[item._id] === "success" ? (
+                                <span className="text-emerald-700 font-bold flex items-center">
+                                  ✓ <span className="text-[10px] uppercase font-semibold ml-1">Exported</span>
+                                </span>
+                              ) : exportStates[item._id] === "failed" ? (
+                                <button
+                                  type="button"
+                                  onClick={() => handleExportItem(item._id)}
+                                  className="text-red-700 font-bold border border-red-700/20 bg-red-500/5 px-2 py-0.5 rounded hover:bg-red-500/10 cursor-pointer flex items-center"
+                                  title="Export failed. Click to retry."
+                                >
+                                  ✗ <span className="text-[10px] uppercase font-semibold ml-1">Retry</span>
+                                </button>
+                              ) : exportStates[item._id] === "loading" ? (
+                                <span className="text-muted-sage animate-pulse text-[10px] uppercase font-semibold">
+                                  Pushing...
+                                </span>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => handleExportItem(item._id)}
+                                  className="border border-ink-navy text-ink-navy px-2 py-0.5 text-[10px] uppercase hover:bg-ink-navy hover:text-paper-cream transition-colors duration-150 cursor-pointer font-bold"
+                                >
+                                  Export
+                                </button>
+                              )}
+                            </div>
+                          )}
                         </td>
                       </tr>
                     ))}

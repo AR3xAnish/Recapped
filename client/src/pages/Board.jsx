@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { DndContext, useDraggable, useDroppable } from "@dnd-kit/core";
 import api from "../services/api";
 import { Highlight } from "../App";
 
 // Draggable Card Component
-function ActionItemCard({ item }) {
+// Draggable Card Component
+function ActionItemCard({ item, notionStatus, exportState, onExport }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: item.id,
   });
@@ -51,15 +52,62 @@ function ActionItemCard({ item }) {
             <span className="text-ink-navy">{item.deadline}</span>
           </div>
         )}
-        <div className="flex justify-between pt-1.5 border-t border-muted-sage/10 mt-1.5">
-          <span>MEETING:</span>
-          <Link
-            to={`/meetings/${item.meetingId}`}
-            className="text-ink-navy underline hover:text-muted-sage truncate max-w-[150px]"
-            onClick={(e) => e.stopPropagation()} // Prevent click drag conflicts
+        <div className="flex justify-between pt-1.5 border-t border-muted-sage/10 mt-1.5 items-center">
+          <div className="flex flex-col">
+            <span className="text-[9px] uppercase tracking-wider text-muted-sage">MEETING:</span>
+            <Link
+              to={`/meetings/${item.meetingId}`}
+              className="text-ink-navy underline hover:text-muted-sage truncate max-w-[120px] font-semibold"
+              onClick={(e) => e.stopPropagation()} // Prevent click drag conflicts
+              onPointerDown={(e) => e.stopPropagation()}
+            >
+              {item.meetingTitle}
+            </Link>
+          </div>
+
+          <div
+            onClick={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
           >
-            {item.meetingTitle}
-          </Link>
+            {!notionStatus.connected || !notionStatus.databaseId ? (
+              <Link
+                to="/settings"
+                className="text-[9px] font-mono text-muted-sage underline hover:text-ink-navy uppercase"
+              >
+                [ Connect ]
+              </Link>
+            ) : (
+              <div className="inline-flex items-center">
+                {exportState === "success" ? (
+                  <span className="text-emerald-700 font-bold text-[10px]" title="Exported to Notion">
+                    ✓ <span className="uppercase text-[9px] font-semibold">Saved</span>
+                  </span>
+                ) : exportState === "failed" ? (
+                  <button
+                    type="button"
+                    onClick={() => onExport(item.id)}
+                    className="text-red-700 font-bold border border-red-700/20 bg-red-500/5 px-1.5 py-0.5 text-[9px] uppercase hover:bg-red-500/10 cursor-pointer"
+                    title="Export failed. Click to retry."
+                  >
+                    ✗ Retry
+                  </button>
+                ) : exportState === "loading" ? (
+                  <span className="text-muted-sage animate-pulse text-[9px] uppercase">
+                    Pushing...
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => onExport(item.id)}
+                    className="border border-ink-navy text-ink-navy px-1.5 py-0.5 text-[9px] uppercase hover:bg-ink-navy hover:text-paper-cream transition-colors duration-150 cursor-pointer font-bold"
+                  >
+                    Export
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -100,6 +148,7 @@ function Column({ id, title, children }) {
 
 // Main Board Component
 export default function Board() {
+  const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -107,6 +156,40 @@ export default function Board() {
   // Filters
   const [selectedOwner, setSelectedOwner] = useState("all");
   const [selectedMeeting, setSelectedMeeting] = useState("all");
+
+  // Notion states
+  const [notionStatus, setNotionStatus] = useState({ connected: false, databaseId: null });
+  const [exportStates, setExportStates] = useState({});
+
+  const checkNotionStatus = async () => {
+    try {
+      const res = await api.get("/integrations/notion/status");
+      setNotionStatus(res.data);
+    } catch (err) {
+      console.error("Failed to query Notion status:", err);
+    }
+  };
+
+  const handleExportItem = async (itemId) => {
+    setExportStates((prev) => ({ ...prev, [itemId]: "loading" }));
+    try {
+      await api.post(`/action-items/${itemId}/export`);
+      setExportStates((prev) => ({ ...prev, [itemId]: "success" }));
+    } catch (err) {
+      console.error("Failed to export action item from board:", err);
+      if (
+        err.response?.status === 401 ||
+        err.response?.data?.code === "NOTION_UNAUTHORIZED"
+      ) {
+        alert(
+          "Notion authentication has expired or been revoked. Redirecting to Settings sheet..."
+        );
+        navigate("/settings");
+      } else {
+        setExportStates((prev) => ({ ...prev, [itemId]: "failed" }));
+      }
+    }
+  };
 
   const fetchActionItems = async () => {
     try {
@@ -121,6 +204,7 @@ export default function Board() {
 
   useEffect(() => {
     fetchActionItems();
+    checkNotionStatus();
   }, []);
 
   const handleDragEnd = async (event) => {
@@ -246,17 +330,35 @@ export default function Board() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <Column id="todo" title="To Do">
             {todoItems.map((item) => (
-              <ActionItemCard key={item.id} item={item} />
+              <ActionItemCard
+                key={item.id}
+                item={item}
+                notionStatus={notionStatus}
+                exportState={exportStates[item.id]}
+                onExport={handleExportItem}
+              />
             ))}
           </Column>
           <Column id="in_progress" title="In Progress">
             {inProgressItems.map((item) => (
-              <ActionItemCard key={item.id} item={item} />
+              <ActionItemCard
+                key={item.id}
+                item={item}
+                notionStatus={notionStatus}
+                exportState={exportStates[item.id]}
+                onExport={handleExportItem}
+              />
             ))}
           </Column>
           <Column id="done" title="Done">
             {doneItems.map((item) => (
-              <ActionItemCard key={item.id} item={item} />
+              <ActionItemCard
+                key={item.id}
+                item={item}
+                notionStatus={notionStatus}
+                exportState={exportStates[item.id]}
+                onExport={handleExportItem}
+              />
             ))}
           </Column>
         </div>
