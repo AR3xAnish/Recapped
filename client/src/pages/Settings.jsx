@@ -15,6 +15,7 @@ export default function Settings() {
   const [dbLoading, setDbLoading] = useState(false);
   const [error, setError] = useState(null);
   const [successMsg, setSuccessMsg] = useState("");
+  const [showPicker, setShowPicker] = useState(false);
 
   const fetchDatabases = useCallback(async () => {
     setDbLoading(true);
@@ -37,21 +38,24 @@ export default function Settings() {
     try {
       const response = await api.get("/integrations/notion/status");
       setStatus(response.data);
-      if (response.data.connected) {
-        fetchDatabases();
-      }
     } catch (err) {
       console.error("Failed to query integration status:", err);
     } finally {
       setLoading(false);
     }
-  }, [fetchDatabases]);
+  }, []);
 
   useEffect(() => {
     fetchStatus();
-    if (searchParams.get("success") === "notion_connected") {
+    const successParam = searchParams.get("success");
+    const errorParam = searchParams.get("error");
+
+    if (successParam === "notion_connected") {
       setSuccessMsg("Successfully connected to Notion!");
       setTimeout(() => setSuccessMsg(""), 5000);
+    }
+    if (errorParam) {
+      setError(errorParam);
     }
   }, [searchParams, fetchStatus]);
 
@@ -163,50 +167,58 @@ export default function Settings() {
               Recapped is authorized to read pages and write action item logs to your shared databases in Notion.
             </p>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-5 border border-muted-sage/20 bg-paper-cream/60">
-              <div className="flex flex-col space-y-1.5 font-mono text-xs">
-                <label className="text-[10px] text-muted-sage uppercase">Target Export Database</label>
-                {dbLoading ? (
-                  <span className="text-muted-sage animate-pulse">Loading shared databases...</span>
-                ) : databases.length > 0 ? (
-                  <select
-                    value={status.databaseId || ""}
-                    onChange={handleSelectDatabase}
-                    className="bg-transparent border border-muted-sage/30 text-ink-navy px-3 py-2 outline-none cursor-pointer focus:border-ink-navy font-sans text-sm"
-                  >
-                    <option value="" disabled>— Select Database —</option>
-                    {databases.map((db) => (
-                      <option key={db.id} value={db.id}>{db.title}</option>
-                    ))}
-                  </select>
-                ) : (
-                  <span className="text-red-700 font-sans text-sm font-semibold">
-                    No accessible databases found. Share a database with this integration.
+            <div className="flex flex-col space-y-4 p-5 border border-muted-sage/20 bg-paper-cream/60 font-mono text-xs text-ink-navy">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] text-muted-sage uppercase block">Export Target</span>
+                  <span className="text-sm font-semibold mt-1 font-sans">
+                    {status.databaseId ? (
+                      <>Exporting to: <Highlight>{status.databaseName || "Recapped Action Items"}</Highlight> in Notion</>
+                    ) : (
+                      <span className="text-amber-700 animate-pulse">[ Provisioning Recapped Action Items database... ]</span>
+                    )}
                   </span>
+                </div>
+                {status.databaseId && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowPicker(!showPicker);
+                      if (!showPicker && databases.length === 0) {
+                        fetchDatabases();
+                      }
+                    }}
+                    className="text-[10px] underline text-ink-navy font-bold uppercase hover:text-muted-sage cursor-pointer ml-4"
+                  >
+                    {showPicker ? "Cancel" : "Change database"}
+                  </button>
                 )}
               </div>
 
-              <div className="flex flex-col space-y-1.5 font-mono text-xs justify-end">
-                <div className="text-[10px] text-muted-sage uppercase">Current Active Target</div>
-                <div className="text-ink-navy text-sm font-semibold mt-1">
-                  {status.databaseName ? (
-                    <Highlight>{status.databaseName}</Highlight>
+              {showPicker && (
+                <div className="pt-4 border-t border-muted-sage/10 flex flex-col space-y-2">
+                  <label className="text-[10px] text-muted-sage uppercase">Select Custom Database Target</label>
+                  {dbLoading ? (
+                    <span className="text-muted-sage animate-pulse">Loading workspace databases...</span>
+                  ) : databases.length > 0 ? (
+                    <select
+                      value={status.databaseId || ""}
+                      onChange={handleSelectDatabase}
+                      className="bg-transparent border border-muted-sage/30 text-ink-navy px-3 py-2 outline-none cursor-pointer focus:border-ink-navy font-sans text-sm max-w-md"
+                    >
+                      <option value="" disabled>— Select Workspace Database —</option>
+                      {databases.map((db) => (
+                        <option key={db.id} value={db.id}>{db.title}</option>
+                      ))}
+                    </select>
                   ) : (
-                    "— None Selected —"
+                    <span className="text-red-700 font-sans text-xs">No databases found. Share another database with the integration.</span>
                   )}
                 </div>
-              </div>
+              )}
             </div>
 
-            <div className="pt-4 flex justify-between items-center border-t border-muted-sage/20">
-              <button
-                type="button"
-                onClick={fetchDatabases}
-                disabled={dbLoading}
-                className="border border-ink-navy text-ink-navy px-4 py-2 text-xs font-semibold uppercase hover:bg-ink-navy hover:text-paper-cream transition-colors duration-150 cursor-pointer"
-              >
-                Refresh Databases
-              </button>
+            <div className="pt-4 flex justify-end items-center border-t border-muted-sage/20">
               <button
                 type="button"
                 onClick={handleDisconnect}

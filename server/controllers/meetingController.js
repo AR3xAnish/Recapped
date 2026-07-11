@@ -421,19 +421,23 @@ exports.transcribeMeeting = async (req, res) => {
 };
 
 const runNotionExport = async (
+  userId,
   accessToken,
   databaseId,
   description,
   owner,
   deadline,
-  meetingTitle
+  meetingTitle,
+  isRetry = false
 ) => {
-  if (accessToken === "mock_notion_token_123") {
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    return;
+  let activeDbId = databaseId;
+  const { resolveExportDatabase } = require("../services/notion");
+
+  if (!activeDbId) {
+    activeDbId = await resolveExportDatabase(userId);
   }
 
-  const response = await fetch(`https://api.notion.com/v1/databases/${databaseId}`, {
+  const response = await fetch(`https://api.notion.com/v1/databases/${activeDbId}`, {
     method: "GET",
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -442,9 +446,40 @@ const runNotionExport = async (
   });
 
   if (response.status === 401) {
+    console.warn(`[Notion Export] Revoked token detected for user ${userId}. Deleting integration.`);
+    await Integration.findOneAndDelete({ userId, provider: "notion" });
     const err = new Error("Notion authentication has expired or been revoked.");
     err.code = "NOTION_UNAUTHORIZED";
     throw err;
+  }
+
+  if (response.status === 404) {
+    if (!isRetry) {
+      console.warn(
+        `[Notion Export] Database ID ${activeDbId} returned 404. Clearing, re-creating and retrying once...`
+      );
+      const integration = await Integration.findOne({ userId, provider: "notion" });
+      if (integration) {
+        integration.databaseId = undefined;
+        integration.databaseName = undefined;
+        await integration.save();
+      }
+      const freshDbId = await resolveExportDatabase(userId);
+      return await runNotionExport(
+        userId,
+        accessToken,
+        freshDbId,
+        description,
+        owner,
+        deadline,
+        meetingTitle,
+        true
+      );
+    } else {
+      throw new Error(
+        "Target Notion database could not be reached (returned 404 on retry)."
+      );
+    }
   }
 
   if (!response.ok) {
@@ -469,7 +504,7 @@ const runNotionExport = async (
   if (!props["Meeting"]) missing["Meeting"] = { rich_text: {} };
 
   if (Object.keys(missing).length > 0) {
-    const patchRes = await fetch(`https://api.notion.com/v1/databases/${databaseId}`, {
+    const patchRes = await fetch(`https://api.notion.com/v1/databases/${activeDbId}`, {
       method: "PATCH",
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -492,7 +527,7 @@ const runNotionExport = async (
   }
 
   const pageBody = {
-    parent: { database_id: databaseId },
+    parent: { database_id: activeDbId },
     properties: {
       [titlePropName]: {
         title: [{ text: { content: description || "Untitled Action Item" } }],
@@ -521,9 +556,40 @@ const runNotionExport = async (
   });
 
   if (pageRes.status === 401) {
+    console.warn(`[Notion Export] Revoked token detected for user ${userId}. Deleting integration.`);
+    await Integration.findOneAndDelete({ userId, provider: "notion" });
     const err = new Error("Notion authentication has expired or been revoked.");
     err.code = "NOTION_UNAUTHORIZED";
     throw err;
+  }
+
+  if (pageRes.status === 404) {
+    if (!isRetry) {
+      console.warn(
+        `[Notion Export] Page creation returned 404. Clearing, re-creating and retrying once...`
+      );
+      const integration = await Integration.findOne({ userId, provider: "notion" });
+      if (integration) {
+        integration.databaseId = undefined;
+        integration.databaseName = undefined;
+        await integration.save();
+      }
+      const freshDbId = await resolveExportDatabase(userId);
+      return await runNotionExport(
+        userId,
+        accessToken,
+        freshDbId,
+        description,
+        owner,
+        deadline,
+        meetingTitle,
+        true
+      );
+    } else {
+      throw new Error(
+        "Target Notion database could not be reached (returned 404 on page creation retry)."
+      );
+    }
   }
 
   if (!pageRes.ok) {
@@ -550,9 +616,9 @@ exports.exportActionItem = async (req, res) => {
     }
 
     const integration = await Integration.findOne({ userId: req.user.id, provider: "notion" });
-    if (!integration || !integration.databaseId) {
+    if (!integration) {
       return res.status(400).json({
-        error: "Notion is not connected or no database is selected.",
+        error: "Notion is not connected.",
         code: "NOTION_NOT_CONNECTED",
       });
     }
@@ -562,6 +628,7 @@ exports.exportActionItem = async (req, res) => {
     const databaseId = integration.databaseId;
 
     await runNotionExport(
+      req.user.id,
       accessToken,
       databaseId,
       actionItem.description,
@@ -576,7 +643,7 @@ exports.exportActionItem = async (req, res) => {
       return res.status(401).json({ error: error.message, code: "NOTION_UNAUTHORIZED" });
     }
     console.error("Export Action Item Error:", error);
-    res.status(500).json({ error: "Failed to export action item to Notion." });
+    res.status(500).json({ error: error.message || "Failed to export action item to Notion." });
   }
 };
 
@@ -596,9 +663,9 @@ exports.exportAllActionItems = async (req, res) => {
     }
 
     const integration = await Integration.findOne({ userId: req.user.id, provider: "notion" });
-    if (!integration || !integration.databaseId) {
+    if (!integration) {
       return res.status(400).json({
-        error: "Notion is not connected or no database is selected.",
+        error: "Notion is not connected.",
         code: "NOTION_NOT_CONNECTED",
       });
     }
@@ -611,6 +678,7 @@ exports.exportAllActionItems = async (req, res) => {
     for (const item of meeting.actionItems) {
       try {
         await runNotionExport(
+          req.user.id,
           accessToken,
           databaseId,
           item.description,

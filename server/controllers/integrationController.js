@@ -1,24 +1,20 @@
 const Integration = require("../models/Integration");
-const { encrypt } = require("../services/crypto");
+const { encrypt, decrypt } = require("../services/crypto");
 
 exports.connectNotion = async (req, res) => {
   try {
     const clientId = process.env.NOTION_CLIENT_ID;
-    const redirectUri =
-      process.env.NOTION_REDIRECT_URI ||
-      "http://localhost:5000/api/integrations/notion/callback";
+    const redirectUri = process.env.NOTION_REDIRECT_URI;
 
-    if (!clientId) {
-      console.log(
-        "[Notion Integration] NOTION_CLIENT_ID not configured. Using Mock Redirect Simulation..."
-      );
-      const mockUrl = `${redirectUri}?code=mock_notion_code_xyz&state=${req.user.id}`;
-      return res.json({ url: mockUrl });
-    }
+    // Generate encrypted CSRF state parameter to prevent spoofing
+    const stateObj = { userId: req.user.id, timestamp: Date.now() };
+    const rawState = encrypt(JSON.stringify(stateObj));
+    const state = Buffer.from(rawState, "utf8").toString("base64url");
 
     const authorizeUrl = `https://api.notion.com/v1/oauth/authorize?client_id=${clientId}&response_type=code&owner=user&redirect_uri=${encodeURIComponent(
       redirectUri
-    )}&state=${req.user.id}`;
+    )}&state=${state}`;
+
     res.json({ url: authorizeUrl });
   } catch (error) {
     console.error("Connect Notion Error:", error);
@@ -27,62 +23,105 @@ exports.connectNotion = async (req, res) => {
 };
 
 exports.notionCallback = async (req, res) => {
+  const settingsBaseUrl = "http://localhost:5173/settings";
   try {
-    const { code, state } = req.query; // state is the userId
-    const redirectUri =
-      process.env.NOTION_REDIRECT_URI ||
-      "http://localhost:5000/api/integrations/notion/callback";
+    const { code, state, error: notionError } = req.query;
+
+    if (notionError) {
+      console.error("[Notion OAuth Callback] Notion returned error:", notionError);
+      return res.redirect(
+        `${settingsBaseUrl}?error=${encodeURIComponent(`Notion authentication error: ${notionError}`)}`
+      );
+    }
+
+    if (!code || !state) {
+      return res.redirect(
+        `${settingsBaseUrl}?error=${encodeURIComponent("Authorization code or state parameter is missing.")}`
+      );
+    }
+
+    // 1. Validate the CSRF state parameter
+    let stateObj;
+    try {
+      const rawState = Buffer.from(state, "base64url").toString("utf8");
+      const decrypted = decrypt(rawState);
+      stateObj = JSON.parse(decrypted);
+    } catch (decryptErr) {
+      console.error("[Notion OAuth Callback] State decryption failed:", decryptErr.message);
+      return res.redirect(
+        `${settingsBaseUrl}?error=${encodeURIComponent("Invalid authorization state parameter (CSRF verification failed).")}`
+      );
+    }
+
+    // Check expiration (max 15 minutes)
+    const expirationLimit = 15 * 60 * 1000;
+    if (Date.now() - stateObj.timestamp > expirationLimit) {
+      return res.redirect(
+        `${settingsBaseUrl}?error=${encodeURIComponent("Authorization state has expired. Please try again.")}`
+      );
+    }
+
+    const targetUserId = stateObj.userId;
     const clientId = process.env.NOTION_CLIENT_ID;
     const clientSecret = process.env.NOTION_CLIENT_SECRET;
+    const redirectUri = process.env.NOTION_REDIRECT_URI;
 
-    const targetUserId = state;
-    if (!targetUserId) {
-      return res.status(400).send("State/userId parameter is missing.");
-    }
+    // 2. Exchange authorization code for access token via real Notion API
+    console.log(`[Notion OAuth Callback] Exchanging code for user ${targetUserId}...`);
+    const authHeader = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
+    
+    const response = await fetch("https://api.notion.com/v1/oauth/token", {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${authHeader}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        grant_type: "authorization_code",
+        code: code,
+        redirect_uri: redirectUri,
+      }),
+    });
 
-    let accessToken = "mock_notion_token_123";
-
-    if (clientId && clientSecret && code && code !== "mock_notion_code_xyz") {
-      const authHeader = Buffer.from(`${clientId}:${clientSecret}`).toString(
-        "base64"
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("[Notion OAuth Callback Error]:", errorText);
+      return res.redirect(
+        `${settingsBaseUrl}?error=${encodeURIComponent("Failed to exchange Notion authorization code with token endpoint.")}`
       );
-      const response = await fetch("https://api.notion.com/v1/oauth/token", {
-        method: "POST",
-        headers: {
-          Authorization: `Basic ${authHeader}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          grant_type: "authorization_code",
-          code: code,
-          redirect_uri: redirectUri,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("[Notion OAuth Callback Error]:", errorText);
-        return res.status(400).send("Failed to exchange Notion authorization code.");
-      }
-
-      const tokenData = await response.json();
-      accessToken = tokenData.access_token;
-    } else {
-      console.log("[Notion Integration] Mock Mode active. Storing mock Notion token.");
     }
 
+    const tokenData = await response.json();
+    const accessToken = tokenData.access_token;
+    const workspaceName = tokenData.workspace_name || "Notion Workspace";
+
+    // 3. Encrypt and save the integration parameters
     const encryptedToken = encrypt(accessToken);
 
     await Integration.findOneAndUpdate(
       { userId: targetUserId, provider: "notion" },
-      { accessToken: encryptedToken },
-      { upsert: true, new: true }
+      { accessToken: encryptedToken, workspaceName },
+      { upsert: true, returnDocument: "after" }
     );
 
-    res.redirect("http://localhost:5173/settings?success=notion_connected");
+    try {
+      const { resolveExportDatabase } = require("../services/notion");
+      await resolveExportDatabase(targetUserId);
+    } catch (dbErr) {
+      console.error("[Notion OAuth Callback] Auto-provision database failed:", dbErr.message);
+      return res.redirect(
+        `${settingsBaseUrl}?error=${encodeURIComponent(
+          `Failed to auto-provision database: ${dbErr.message}`
+        )}`
+      );
+    }
+
+    res.redirect(`${settingsBaseUrl}?success=notion_connected`);
   } catch (error) {
     console.error("Notion Callback Error:", error);
-    res.status(500).send("Notion integration connection failed.");
+    res.redirect(
+      `${settingsBaseUrl}?error=${encodeURIComponent("An internal error occurred during connection callback.")}`
+    );
   }
 };
 
@@ -98,15 +137,7 @@ exports.getNotionDatabases = async (req, res) => {
         .json({ error: "Notion is not connected.", code: "NOTION_NOT_CONNECTED" });
     }
 
-    const { decrypt } = require("../services/crypto");
     const accessToken = decrypt(integration.accessToken);
-
-    if (accessToken === "mock_notion_token_123") {
-      return res.json([
-        { id: "mock_db_minutes", title: "Minutes Ledger Actions" },
-        { id: "mock_db_tasks", title: "General Action Items" },
-      ]);
-    }
 
     const response = await fetch("https://api.notion.com/v1/search", {
       method: "POST",
@@ -124,6 +155,8 @@ exports.getNotionDatabases = async (req, res) => {
     });
 
     if (response.status === 401) {
+      console.warn(`[Notion API] Revoked token detected for user ${req.user.id}. Deleting integration.`);
+      await Integration.findOneAndDelete({ userId: req.user.id, provider: "notion" });
       return res.status(401).json({
         error: "Notion authentication has expired or been revoked. Please reconnect.",
         code: "NOTION_UNAUTHORIZED",
@@ -165,7 +198,7 @@ exports.setNotionDatabase = async (req, res) => {
     const updated = await Integration.findOneAndUpdate(
       { userId: req.user.id, provider: "notion" },
       { databaseId, databaseName },
-      { new: true }
+      { returnDocument: "after" }
     );
 
     if (!updated) {
@@ -208,6 +241,7 @@ exports.getNotionStatus = async (req, res) => {
       connected: true,
       databaseId: integration.databaseId,
       databaseName: integration.databaseName,
+      workspaceName: integration.workspaceName,
     });
   } catch (error) {
     console.error("Get Notion Status Error:", error);

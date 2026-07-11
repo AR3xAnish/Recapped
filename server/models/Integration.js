@@ -21,6 +21,9 @@ const IntegrationSchema = new mongoose.Schema({
   databaseName: {
     type: String,
   },
+  workspaceName: {
+    type: String,
+  },
   createdAt: {
     type: Date,
     default: Date.now,
