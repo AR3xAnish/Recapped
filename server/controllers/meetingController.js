@@ -2,6 +2,8 @@ const Meeting = require("../models/Meeting");
 const mammoth = require("mammoth");
 const PDFParser = require("pdf2json");
 const path = require("path");
+const fs = require("fs");
+const { transcribeAudio } = require("../services/transcribe");
 const { extractTranscript } = require("../services/agent/extract");
 const { generateSummaryAndEmail } = require("../services/agent/summarize");
 
@@ -44,24 +46,45 @@ exports.createMeeting = async (req, res) => {
     let rawTranscript = "";
     let source = "paste";
 
+    let audioFilePath = undefined;
+    let audioOriginalName = undefined;
+    let audioMimeType = undefined;
+
     if (req.file) {
-      source = "upload";
       const file = req.file;
+      const ext = path.extname(file.originalname).toLowerCase();
 
       if (!title) {
         title = path.basename(file.originalname, path.extname(file.originalname));
       }
 
-      const ext = path.extname(file.originalname).toLowerCase();
-      if (ext === ".txt") {
+      if (ext === ".mp3" || ext === ".m4a" || ext === ".wav") {
+        source = "audio";
+        const uploadsDir = path.join(__dirname, "../uploads");
+        if (!fs.existsSync(uploadsDir)) {
+          fs.mkdirSync(uploadsDir, { recursive: true });
+        }
+        const filename = `audio-${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+        audioFilePath = path.join(uploadsDir, filename);
+        fs.writeFileSync(audioFilePath, file.buffer);
+        audioOriginalName = file.originalname;
+        audioMimeType = file.mimetype;
+        rawTranscript = ""; // pending transcription
+      } else if (ext === ".txt") {
+        source = "upload";
         rawTranscript = file.buffer.toString("utf-8");
       } else if (ext === ".docx") {
+        source = "upload";
         const mammothResult = await mammoth.extractRawText({ buffer: file.buffer });
         rawTranscript = mammothResult.value;
       } else if (ext === ".pdf") {
+        source = "upload";
         rawTranscript = await parsePdfBuffer(file.buffer);
       } else {
-        return res.status(400).json({ error: "Unsupported file type. Only .txt, .docx, and .pdf are allowed." });
+        return res.status(400).json({
+          error:
+            "Unsupported file type. Only .txt, .docx, .pdf, .mp3, .m4a, and .wav are allowed.",
+        });
       }
     } else {
       if (!title || !transcriptText) {
@@ -70,16 +93,19 @@ exports.createMeeting = async (req, res) => {
       rawTranscript = transcriptText;
     }
 
-    if (!rawTranscript || !rawTranscript.trim()) {
+    if (source !== "audio" && (!rawTranscript || !rawTranscript.trim())) {
       return res.status(400).json({ error: "Transcript content cannot be empty." });
     }
 
     const meeting = new Meeting({
       title,
-      rawTranscript: rawTranscript.trim(),
+      rawTranscript: rawTranscript ? rawTranscript.trim() : "",
       source,
       status: "uploaded",
       owner: req.user.id,
+      audioFilePath,
+      audioOriginalName,
+      audioMimeType,
     });
 
     const savedMeeting = await meeting.save();
@@ -330,5 +356,65 @@ exports.getMeetings = async (req, res) => {
   } catch (error) {
     console.error("Get Meetings Error:", error);
     res.status(500).json({ error: "Failed to fetch meeting history logs." });
+  }
+};
+
+exports.transcribeMeeting = async (req, res) => {
+  try {
+    const meeting = await Meeting.findById(req.params.id);
+    if (!meeting) {
+      return res.status(404).json({ error: "Meeting registry entry not found." });
+    }
+
+    if (meeting.owner.toString() !== req.user.id) {
+      return res.status(403).json({ error: "Access denied." });
+    }
+
+    if (meeting.source !== "audio" || !meeting.audioFilePath) {
+      return res.status(400).json({ error: "This meeting registry entry is not an audio log source." });
+    }
+
+    if (!fs.existsSync(meeting.audioFilePath)) {
+      return res.status(400).json({ error: "Audio file not found on server registry." });
+    }
+
+    // Temporarily update status to processing
+    meeting.status = "processing";
+    await meeting.save();
+
+    const fileBuffer = fs.readFileSync(meeting.audioFilePath);
+
+    try {
+      console.log(`[Agent] Beginning transcription for meeting ${meeting._id}...`);
+      const transcript = await transcribeAudio(
+        fileBuffer,
+        meeting.audioOriginalName,
+        meeting.audioMimeType
+      );
+
+      meeting.rawTranscript = transcript;
+      meeting.status = "uploaded"; // Ready for the /process step
+      meeting.processingError = undefined;
+
+      // Clean up audio file to save disk space
+      try {
+        fs.unlinkSync(meeting.audioFilePath);
+        meeting.audioFilePath = undefined;
+      } catch (unlinkErr) {
+        console.error("[Agent] Failed to clean up audio file:", unlinkErr);
+      }
+
+      await meeting.save();
+      res.json(meeting);
+    } catch (transcribeError) {
+      console.error("[Agent] Transcription failed:", transcribeError);
+      meeting.status = "failed";
+      meeting.processingError = transcribeError.message || "Transcription failed.";
+      await meeting.save();
+      res.status(500).json({ error: "Transcription failed: " + transcribeError.message });
+    }
+  } catch (error) {
+    console.error("Transcribe Meeting Error:", error);
+    res.status(500).json({ error: "Failed to run audio transcription." });
   }
 };

@@ -8,7 +8,7 @@ const MeetingSchema = new mongoose.Schema({
   },
   rawTranscript: {
     type: String,
-    required: true,
+    required: false,
   },
   source: {
     type: String,
@@ -19,6 +19,15 @@ const MeetingSchema = new mongoose.Schema({
     type: String,
     enum: ["uploaded", "processing", "processed", "failed"],
     default: "uploaded",
+  },
+  audioFilePath: {
+    type: String,
+  },
+  audioOriginalName: {
+    type: String,
+  },
+  audioMimeType: {
+    type: String,
   },
   participants: [
     {
