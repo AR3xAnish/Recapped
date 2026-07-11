@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import api from "../services/api";
 
 export default function NewMeeting() {
-  const [activeTab, setActiveTab] = useState("paste"); // "paste" | "upload"
+  const [activeTab, setActiveTab] = useState("paste"); // "paste" | "upload" | "audio"
   const [title, setTitle] = useState("");
   const [transcriptText, setTranscriptText] = useState("");
   const [file, setFile] = useState(null);
@@ -40,14 +40,27 @@ export default function NewMeeting() {
   const handleFileSelection = (selectedFile) => {
     setError(null);
     const ext = selectedFile.name.split(".").pop().toLowerCase();
-    if (ext !== "txt" && ext !== "docx" && ext !== "pdf") {
-      setError("Invalid file type. Only .txt, .docx, and .pdf files are supported.");
-      setFile(null);
-      return;
+
+    if (activeTab === "audio") {
+      if (ext !== "mp3" && ext !== "m4a" && ext !== "wav") {
+        setError("Invalid file type. Only .mp3, .m4a, and .wav files are supported.");
+        setFile(null);
+        return;
+      }
+    } else {
+      if (ext !== "txt" && ext !== "docx" && ext !== "pdf") {
+        setError("Invalid file type. Only .txt, .docx, and .pdf files are supported.");
+        setFile(null);
+        return;
+      }
     }
+
     setFile(selectedFile);
     if (!title) {
-      const nameWithoutExt = selectedFile.name.substring(0, selectedFile.name.lastIndexOf("."));
+      const nameWithoutExt = selectedFile.name.substring(
+        0,
+        selectedFile.name.lastIndexOf(".")
+      );
       setTitle(nameWithoutExt);
     }
   };
@@ -63,7 +76,7 @@ export default function NewMeeting() {
       }
     } else {
       if (!file) {
-        setError("Please select or drop a transcript file.");
+        setError("Please select or drop a file.");
         return;
       }
     }
@@ -104,8 +117,8 @@ export default function NewMeeting() {
         <h1 className="text-3xl font-extrabold text-ink-navy mt-4 tracking-tight">
           Record Meeting Transcript
         </h1>
-        <p className="text-muted-sage mt-2 text-sm leading-relaxed max-w-xl">
-          Pasted text or raw text files will be loaded into the commitments database scoped to your active session.
+        <p className="text-muted-sage mt-2 text-sm leading-relaxed max-w-xl font-sans">
+          Pasted text, raw document sheets, or audio files will be loaded into the commitments database scoped to your active session.
         </p>
       </div>
 
@@ -116,11 +129,28 @@ export default function NewMeeting() {
       )}
 
       {/* Ledger Tabs */}
-      <div className="flex border-b border-muted-sage/20 mb-8 font-sans">
+      
+      <div className="flex flex-wrap border-b border-muted-sage/20 mb-8 font-sans">
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab("audio");
+            setFile(null);
+            setError(null);
+          }}
+          className={`px-6 py-3 text-sm font-semibold tracking-wide border-b-2 transition-colors duration-150 cursor-pointer ${
+            activeTab === "audio"
+              ? "border-ink-navy text-ink-navy"
+              : "border-transparent text-muted-sage hover:text-ink-navy"
+          }`}
+        >
+          [ Upload Audio ]
+        </button>
         <button
           type="button"
           onClick={() => {
             setActiveTab("paste");
+            setFile(null);
             setError(null);
           }}
           className={`px-6 py-3 text-sm font-semibold tracking-wide border-b-2 transition-colors duration-150 cursor-pointer ${
@@ -135,6 +165,7 @@ export default function NewMeeting() {
           type="button"
           onClick={() => {
             setActiveTab("upload");
+            setFile(null);
             setError(null);
           }}
           className={`px-6 py-3 text-sm font-semibold tracking-wide border-b-2 transition-colors duration-150 cursor-pointer ${
@@ -143,8 +174,9 @@ export default function NewMeeting() {
               : "border-transparent text-muted-sage hover:text-ink-navy"
           }`}
         >
-          [ Upload File ]
+          [ Upload Document ]
         </button>
+        
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
@@ -176,10 +208,10 @@ export default function NewMeeting() {
               required
             />
           </div>
-        ) : (
+        ) : activeTab === "upload" ? (
           <div>
             <label className="text-xs font-mono uppercase tracking-wider text-muted-sage block mb-2">
-              Transcript File (.txt, .docx, .pdf)
+              Transcript Document File (.txt, .docx, .pdf)
             </label>
             <div
               onDragEnter={handleDrag}
@@ -199,13 +231,52 @@ export default function NewMeeting() {
                 onChange={handleFileChange}
                 className="hidden"
               />
-              <label htmlFor="file-upload" className="cursor-pointer block">
+              <label htmlFor="file-upload" className="cursor-pointer block font-sans">
                 <div className="space-y-3">
                   <span className="text-sm font-semibold text-ink-navy block">
-                    {file ? `Selected: ${file.name}` : "Drag and drop transcript file here"}
+                    {file ? `Selected: ${file.name}` : "Drag and drop document file here"}
                   </span>
                   <span className="text-xs text-muted-sage font-mono block">
-                    {file ? `(${(file.size / 1024).toFixed(1)} KB)` : "or click to select file from disk"}
+                    {file
+                      ? `(${(file.size / 1024).toFixed(1)} KB)`
+                      : "or click to select document from disk"}
+                  </span>
+                </div>
+              </label>
+            </div>
+          </div>
+        ) : (
+          <div>
+            <label className="text-xs font-mono uppercase tracking-wider text-muted-sage block mb-2">
+              Transcript Audio File (.mp3, .m4a, .wav)
+            </label>
+            <div
+              onDragEnter={handleDrag}
+              onDragOver={handleDrag}
+              onDragLeave={handleDrag}
+              onDrop={handleDrop}
+              className={`border-2 border-dashed rounded-none p-12 text-center transition-colors duration-150 relative ${
+                dragActive
+                  ? "border-ink-navy bg-ink-navy/5"
+                  : "border-muted-sage/30 hover:border-ink-navy bg-paper-cream/30"
+              }`}
+            >
+              <input
+                type="file"
+                id="audio-upload"
+                accept=".mp3,.m4a,.wav"
+                onChange={handleFileChange}
+                className="hidden"
+              />
+              <label htmlFor="audio-upload" className="cursor-pointer block font-sans">
+                <div className="space-y-3">
+                  <span className="text-sm font-semibold text-ink-navy block">
+                    {file ? `Selected: ${file.name}` : "Drag and drop audio file here"}
+                  </span>
+                  <span className="text-xs text-muted-sage font-mono block">
+                    {file
+                      ? `(${(file.size / (1024 * 1024)).toFixed(2)} MB)`
+                      : "or click to select audio from disk (max 50MB)"}
                   </span>
                 </div>
               </label>

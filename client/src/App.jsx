@@ -47,6 +47,14 @@ function Navigation({ isDark, setIsDark }) {
               Home
             </Link>
             <Link
+              to="/meetings/new"
+              className={`transition-colors duration-200 text-sm font-semibold tracking-wide ${
+                isActive("/meetings/new") ? "text-ink-navy border-b-2 border-ink-navy pb-1" : "text-muted-sage hover:text-ink-navy"
+              }`}
+            >
+              New Entry
+            </Link>
+            <Link
               to="/board"
               className={`transition-colors duration-200 text-sm font-semibold tracking-wide ${
                 isActive("/board") ? "text-ink-navy border-b-2 border-ink-navy pb-1" : "text-muted-sage hover:text-ink-navy"
@@ -62,14 +70,7 @@ function Navigation({ isDark, setIsDark }) {
             >
               History
             </Link>
-            <Link
-              to="/meetings/new"
-              className={`transition-colors duration-200 text-sm font-semibold tracking-wide ${
-                isActive("/meetings/new") ? "text-ink-navy border-b-2 border-ink-navy pb-1" : "text-muted-sage hover:text-ink-navy"
-              }`}
-            >
-              New Entry
-            </Link>
+            
             <Link
               to="/about"
               className={`transition-colors duration-200 text-sm font-semibold tracking-wide ${
@@ -229,7 +230,7 @@ function About() {
           <span>DATE: {new Date().toLocaleDateString()}</span>
         </div>
         <h1 className="text-3xl font-extrabold text-ink-navy mt-4 tracking-tight">
-          About the Minutes Book Ledger
+          About the Recapped Ledger
         </h1>
         <p className="text-muted-sage mt-2 text-base max-w-xl font-normal leading-relaxed">
           Technical ledger metadata and configurations for the scaffold.
