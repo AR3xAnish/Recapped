@@ -24,7 +24,7 @@ if (missingEnvVars.length > 0) {
 }
 
 // Connect to Database
-connectDB();
+// Note: Handled dynamically via middleware to prevent race conditions on serverless invocations
 
 const app = express();
 
@@ -42,6 +42,17 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Database connection middleware to ensure connection is established before route handling
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    console.error("Database connection failed during request:", err);
+    res.status(503).json({ error: "Database connection failed" });
+  }
+});
+
 // API Routes
 app.use("/api", apiRoutes);
 
@@ -54,6 +65,10 @@ app.use((err, req, res, _next) => {
 // Port configuration
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
+
+module.exports = app;
