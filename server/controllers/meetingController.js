@@ -725,3 +725,31 @@ exports.exportAllActionItems = async (req, res) => {
     res.status(500).json({ error: "Failed to run action items export." });
   }
 };
+
+exports.deleteMeeting = async (req, res) => {
+  try {
+    const meeting = await Meeting.findById(req.params.id);
+    if (!meeting) {
+      return res.status(404).json({ error: "Meeting registry entry not found." });
+    }
+
+    if (meeting.owner.toString() !== req.user.id) {
+      return res.status(403).json({ error: "Access denied. You do not own this meeting registry entry." });
+    }
+
+    const TranscriptChunk = require("../models/TranscriptChunk");
+    const QaTurn = require("../models/QaTurn");
+
+    await TranscriptChunk.deleteMany({ meetingId: meeting._id });
+    await QaTurn.deleteMany({ meetingId: meeting._id });
+    await Meeting.deleteOne({ _id: meeting._id });
+
+    res.json({
+      success: true,
+      message: "Meeting registry entry and associated history logs deleted successfully.",
+    });
+  } catch (error) {
+    console.error("Delete Meeting Error:", error);
+    res.status(500).json({ error: "Failed to delete meeting registry entry." });
+  }
+};

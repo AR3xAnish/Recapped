@@ -45,4 +45,6 @@ router.post("/:id/index", ragController.retryIndexing);
 router.post("/:id/ask", ragController.askQuestion);
 router.get("/:id/qa-history", ragController.getQaHistory);
 
+router.delete("/:id", meetingController.deleteMeeting);
+
 module.exports = router;
