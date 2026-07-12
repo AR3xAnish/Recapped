@@ -4,14 +4,18 @@ const TranscriptChunk = require("../models/TranscriptChunk");
 const { RecursiveCharacterTextSplitter } = require("@langchain/textsplitters");
 const { ChatGroq } = require("@langchain/groq");
 const { ChatPromptTemplate } = require("@langchain/core/prompts");
-const { pipeline } = require("@xenova/transformers");
-
+let pipelineFn = null;
 let extractor = null;
 
 async function getExtractor() {
   if (!extractor) {
+    if (!pipelineFn) {
+      console.log("[RAG] Dynamically importing @xenova/transformers...");
+      const transformers = await import("@xenova/transformers");
+      pipelineFn = transformers.pipeline;
+    }
     console.log("[RAG] Loading Xenova/all-MiniLM-L6-v2 embedding model...");
-    extractor = await pipeline("feature-extraction", "Xenova/all-MiniLM-L6-v2");
+    extractor = await pipelineFn("feature-extraction", "Xenova/all-MiniLM-L6-v2");
     console.log("[RAG] Model loaded successfully.");
   }
   return extractor;
