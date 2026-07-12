@@ -10,6 +10,7 @@ import MeetingDetail from "./pages/MeetingDetail";
 import Board from "./pages/Board";
 import HistoryPage from "./pages/HistoryPage";
 import Settings from "./pages/Settings";
+import Landing from "./pages/Landing";
 
 // Signature Reusable Highlight Component
 export function Highlight({ children }) {
@@ -37,12 +38,12 @@ function Navigation({ isDark, setIsDark }) {
         </span>
       </div>
       <div className="flex items-center space-x-8">
-        {user && (
+        {user ? (
           <>
             <Link
-              to="/"
+              to="/dashboard"
               className={`transition-colors duration-200 text-sm font-semibold tracking-wide ${
-                isActive("/") ? "text-ink-navy border-b-2 border-ink-navy pb-1" : "text-muted-sage hover:text-ink-navy"
+                isActive("/dashboard") ? "text-ink-navy border-b-2 border-ink-navy pb-1" : "text-muted-sage hover:text-ink-navy"
               }`}
             >
               Home
@@ -96,6 +97,21 @@ function Navigation({ isDark, setIsDark }) {
             >
               Logout
             </button>
+          </>
+        ) : (
+          <>
+            <Link
+              to="/login"
+              className="text-sm font-semibold text-muted-sage hover:text-ink-navy transition-colors duration-200"
+            >
+              Sign In
+            </Link>
+            <Link
+              to="/register"
+              className="border border-ink-navy text-ink-navy px-3 py-1.5 text-xs font-semibold uppercase hover:bg-ink-navy hover:text-paper-cream transition-colors duration-150"
+            >
+              Get Started
+            </Link>
           </>
         )}
         <button
@@ -283,7 +299,7 @@ function About() {
 
       <div className="mt-8">
         <Link
-          to="/"
+          to="/dashboard"
           className="border border-ink-navy text-ink-navy px-4 py-2 text-sm font-semibold hover:bg-ink-navy hover:text-paper-cream transition-colors duration-150 inline-block cursor-pointer"
         >
           &larr; Return to Ledger
@@ -301,8 +317,9 @@ function AppContent({ isDark, setIsDark }) {
       <main className="flex-grow">
         <Routes>
           {/* Protected Routes */}
+          <Route path="/" element={<Landing />} />
           <Route
-            path="/"
+            path="/dashboard"
             element={
               <ProtectedRoute>
                 <Dashboard />

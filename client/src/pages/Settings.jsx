@@ -264,7 +264,7 @@ export default function Settings() {
       </div>
 
       <div className="mt-8">
-        <Link to="/" className="text-ink-navy font-bold underline hover:text-muted-sage text-sm font-mono">
+        <Link to="/dashboard" className="text-ink-navy font-bold underline hover:text-muted-sage text-sm font-mono">
           &larr; Return to Home
         </Link>
       </div>

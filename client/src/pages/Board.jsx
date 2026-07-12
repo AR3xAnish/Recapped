@@ -269,7 +269,7 @@ export default function Board() {
         <div className="bg-red-500/10 border border-red-500/20 text-red-700 p-4 text-xs font-mono mb-8">
           BOARD ERROR: {error}
         </div>
-        <Link to="/" className="text-ink-navy font-bold underline hover:text-muted-sage text-sm">
+        <Link to="/dashboard" className="text-ink-navy font-bold underline hover:text-muted-sage text-sm">
           &larr; Return to Ledger
         </Link>
       </div>

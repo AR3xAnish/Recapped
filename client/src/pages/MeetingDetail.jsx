@@ -277,7 +277,7 @@ export default function MeetingDetail() {
         <div className="bg-red-500/10 border border-red-500/20 text-red-700 p-4 text-xs font-mono mb-8">
           ENTRY ERROR: {error}
         </div>
-        <Link to="/" className="text-ink-navy font-bold underline hover:text-muted-sage text-sm">
+        <Link to="/dashboard" className="text-ink-navy font-bold underline hover:text-muted-sage text-sm">
           &larr; Return to Ledger
         </Link>
       </div>
@@ -712,7 +712,7 @@ export default function MeetingDetail() {
 
       <div className="mt-8 border-t border-muted-sage/20 pt-8">
         <Link
-          to="/"
+          to="/dashboard"
           className="border border-ink-navy text-ink-navy px-4 py-2 text-sm font-semibold hover:bg-ink-navy hover:text-paper-cream transition-colors duration-150 inline-block cursor-pointer"
         >
           &larr; Return to Ledger
