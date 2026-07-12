@@ -187,6 +187,26 @@ exports.processMeeting = async (req, res) => {
             freshMeeting.followUpEmail = summaryResult.followUpEmail;
             await freshMeeting.save();
             console.log(`[Agent] Meeting ${freshMeeting._id} summarization completed successfully.`);
+
+            // Trigger background indexing without blocking rest of request completion
+            const { indexMeeting } = require("../services/rag");
+            indexMeeting(freshMeeting._id, freshMeeting.rawTranscript)
+              .then((idxSuccess) => {
+                if (!idxSuccess) {
+                  console.error(`[Agent] Meeting ${freshMeeting._id} indexing failed.`);
+                }
+              })
+              .catch(async (idxError) => {
+                console.error(
+                  `[Agent] Meeting ${freshMeeting._id} indexing encountered error:`,
+                  idxError
+                );
+                try {
+                  await Meeting.findByIdAndUpdate(freshMeeting._id, { chunked: false });
+                } catch (dbErr) {
+                  console.error("[Agent] Failed to update chunked status flag in DB:", dbErr);
+                }
+              });
           } catch (sumError) {
             console.error(`[Agent] Meeting ${freshMeeting._id} summarization failed:`, sumError);
           }

@@ -24,6 +24,13 @@ export default function MeetingDetail() {
   const [exportStates, setExportStates] = useState({});
   const [bulkExportLoading, setBulkExportLoading] = useState(false);
 
+  // RAG Q&A states
+  const [qaTurns, setQaTurns] = useState([]);
+  const [newQuestion, setNewQuestion] = useState("");
+  const [qaLoading, setQaLoading] = useState(false);
+  const [qaError, setQaError] = useState(null);
+  const [indexRetrying, setIndexRetrying] = useState(false);
+
   const fetchMeeting = useCallback(async (showLoading = false) => {
     if (showLoading) setLoading(true);
     try {
@@ -187,6 +194,73 @@ export default function MeetingDetail() {
     navigator.clipboard.writeText(recapText);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const fetchQaHistory = useCallback(async () => {
+    try {
+      const res = await api.get(`/meetings/${id}/qa-history`);
+      setQaTurns(res.data);
+    } catch (err) {
+      console.error("Failed to load Q&A history:", err);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    if (meeting?.status === "processed") {
+      fetchQaHistory();
+    }
+  }, [meeting?.status, fetchQaHistory]);
+
+  const handleAsk = async (e) => {
+    e.preventDefault();
+    if (!newQuestion.trim()) return;
+
+    setQaLoading(true);
+    setQaError(null);
+    const q = newQuestion;
+    setNewQuestion("");
+
+    // Optimistically push the question with a loading indicator
+    const optimisticTurn = {
+      _id: "optimistic_" + Date.now(),
+      question: q,
+      answer: "",
+      loading: true,
+      sources: [],
+    };
+    setQaTurns((prev) => [...prev, optimisticTurn]);
+
+    try {
+      const res = await api.post(`/meetings/${id}/ask`, { question: q });
+      setQaTurns((prev) =>
+        prev.map((turn) =>
+          turn._id === optimisticTurn._id ? res.data : turn
+        )
+      );
+    } catch (err) {
+      console.error("Failed to ask question:", err);
+      const errMsg = err.response?.data?.error || "Failed to get an answer.";
+      setQaError(errMsg);
+      // Remove the optimistic bubble on failure
+      setQaTurns((prev) => prev.filter((turn) => turn._id !== optimisticTurn._id));
+    } finally {
+      setQaLoading(false);
+    }
+  };
+
+  const handleIndexRetry = async () => {
+    setIndexRetrying(true);
+    setQaError(null);
+    try {
+      await api.post(`/meetings/${id}/index`);
+      await fetchMeeting();
+      alert("Meeting transcript indexing started successfully!");
+    } catch (err) {
+      console.error("Failed to start indexing:", err);
+      setQaError(err.response?.data?.error || "Failed to trigger indexing.");
+    } finally {
+      setIndexRetrying(false);
+    }
   };
 
   if (loading) {
@@ -498,6 +572,119 @@ export default function MeetingDetail() {
               </div>
             ) : (
               <p className="text-sm text-muted-sage italic">No action items extracted.</p>
+            )}
+          </div>
+
+          {/* RAG Q&A Panel */}
+          <div className="pb-8 border-b border-muted-sage/30">
+            <h2 className="text-sm font-mono uppercase tracking-wider text-muted-sage mb-4">
+              Transcript QA Ledger Board
+            </h2>
+
+            {!meeting.chunked ? (
+              <div className="border border-dashed border-amber-500/40 bg-amber-500/5 p-6 font-mono text-xs text-amber-900 space-y-4">
+                <div className="flex items-center space-x-2">
+                  <span className="animate-pulse">●</span>
+                  <span className="font-bold uppercase">Preparing Registry Log for Questions</span>
+                </div>
+                <p className="font-sans leading-relaxed text-xs">
+                  This meeting transcript is currently undergoing background vector index ingestion. If this has taken longer than expected, you may manually trigger/retry indexing below.
+                </p>
+                <div>
+                  <button
+                    type="button"
+                    onClick={handleIndexRetry}
+                    disabled={indexRetrying}
+                    className="border border-amber-700 text-amber-800 px-4 py-2 font-semibold uppercase hover:bg-amber-700 hover:text-paper-cream transition-colors duration-150 cursor-pointer disabled:opacity-50"
+                  >
+                    {indexRetrying ? "Ingesting..." : "Force Ingest Vector Index"}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="border border-muted-sage/30 p-5 bg-paper-cream/40 flex flex-col space-y-4">
+                {/* Chat Log history */}
+                <div className="max-h-[400px] overflow-y-auto space-y-4 pr-2 font-sans">
+                  {qaTurns.length === 0 ? (
+                    <div className="text-xs text-muted-sage font-mono italic text-center py-6">
+                      [ No questions recorded for this ledger log entry yet. ]
+                    </div>
+                  ) : (
+                    qaTurns.map((turn) => (
+                      <div key={turn._id} className="space-y-3">
+                        {/* Question Bubble */}
+                        <div className="flex justify-end">
+                          <div className="bg-ink-navy text-paper-cream px-4 py-2 max-w-[80%] text-sm rounded shadow-sm">
+                            <span className="font-mono text-[9px] text-muted-sage block uppercase tracking-wider mb-1">Question</span>
+                            <span className="leading-relaxed font-sans">{turn.question}</span>
+                          </div>
+                        </div>
+
+                        {/* Answer Bubble */}
+                        <div className="flex justify-start">
+                          <div className="bg-paper-cream border border-muted-sage/30 text-ink-navy px-4 py-2 max-w-[80%] text-sm rounded shadow-sm w-full">
+                            <span className="font-mono text-[9px] text-muted-sage block uppercase tracking-wider mb-1">Answer</span>
+                            {turn.loading ? (
+                              <div className="flex items-center space-x-2 text-xs font-mono text-muted-sage animate-pulse">
+                                <span>Thinking...</span>
+                              </div>
+                            ) : (
+                              <>
+                                <span className="leading-relaxed font-sans block whitespace-pre-wrap">{turn.answer}</span>
+                                
+                                {/* Sources citation collapse */}
+                                {turn.sources && turn.sources.length > 0 && (
+                                  <div className="mt-3 pt-3 border-t border-muted-sage/20">
+                                    <details className="cursor-pointer group">
+                                      <summary className="text-[10px] font-mono text-muted-sage hover:text-ink-navy select-none list-none flex items-center">
+                                        <span className="inline-block transition-transform group-open:rotate-90 mr-1.5">&rarr;</span>
+                                        <span>Show Sources ({turn.sources.length})</span>
+                                      </summary>
+                                      <div className="mt-2 space-y-2 pl-3 border-l border-muted-sage/30 max-h-[150px] overflow-y-auto">
+                                        {turn.sources.map((src, sidx) => (
+                                          <div key={sidx} className="text-[11px] font-sans text-muted-sage leading-relaxed bg-paper-cream/60 p-2 border border-muted-sage/10 rounded">
+                                            <span className="font-mono text-[9px] block uppercase font-bold text-ink-navy mb-1">Excerpt #{src.chunkIndex + 1}</span>
+                                            {src.excerpt}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </details>
+                                  </div>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* Input box form */}
+                <form onSubmit={handleAsk} className="pt-4 border-t border-muted-sage/20 flex gap-2">
+                  <input
+                    type="text"
+                    value={newQuestion}
+                    onChange={(e) => setNewQuestion(e.target.value)}
+                    disabled={qaLoading}
+                    placeholder="Ask a question about this meeting's transcript..."
+                    className="flex-grow bg-transparent border border-muted-sage/30 px-3 py-2 text-sm text-ink-navy focus:outline-none focus:border-ink-navy disabled:opacity-50"
+                  />
+                  <button
+                    type="submit"
+                    disabled={qaLoading || !newQuestion.trim()}
+                    className="border border-ink-navy bg-ink-navy text-paper-cream px-4 py-2 text-xs font-semibold uppercase hover:bg-transparent hover:text-ink-navy transition-colors duration-150 cursor-pointer disabled:opacity-50"
+                  >
+                    {qaLoading ? "Asking..." : "Ask"}
+                  </button>
+                </form>
+
+                {qaError && (
+                  <div className="bg-red-500/10 border border-red-500/20 text-red-700 p-3 text-xs font-mono">
+                    QA ERROR: {qaError}
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </div>

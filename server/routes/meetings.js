@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const multer = require("multer");
 const meetingController = require("../controllers/meetingController");
+const ragController = require("../controllers/ragController");
 
 const storage = multer.memoryStorage();
 const upload = multer({
@@ -38,5 +39,10 @@ router.post("/:id/transcribe", meetingController.transcribeMeeting);
 router.post("/:id/process", meetingController.processMeeting);
 router.post("/:id/export-all", meetingController.exportAllActionItems);
 router.put("/:id", meetingController.updateMeeting);
+
+// RAG Q&A Endpoints
+router.post("/:id/index", ragController.retryIndexing);
+router.post("/:id/ask", ragController.askQuestion);
+router.get("/:id/qa-history", ragController.getQaHistory);
 
 module.exports = router;
