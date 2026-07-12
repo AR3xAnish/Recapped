@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const apiBase =
-  import.meta.env.VITE_API_URL ||
+  import.meta.env.VITE_API_URL + "/api" ||
   (import.meta.env.MODE === "production" ? "" : "http://localhost:5000/api");
 
 const api = axios.create({
@@ -29,7 +29,7 @@ api.interceptors.response.use(
     if (error.response && error.response.status === 401) {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
-      
+
       // Redirect to login if not already on an auth page
       if (
         window.location.pathname !== "/login" &&
