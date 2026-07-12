@@ -2,10 +2,10 @@ import axios from "axios";
 
 const apiBase =
   import.meta.env.VITE_API_URL ||
-  (import.meta.env.MODE === "production" ? "" : "http://localhost:5000");
+  (import.meta.env.MODE === "production" ? "" : "http://localhost:5000/api");
 
 const api = axios.create({
-  baseURL: `${apiBase}/api`,
+  baseURL: apiBase,
 });
 
 // Request Interceptor

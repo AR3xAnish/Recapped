@@ -17,6 +17,7 @@ export default function HistoryPage() {
   const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 10, pages: 1 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
 
   // Debounce search input
   useEffect(() => {
@@ -57,6 +58,22 @@ export default function HistoryPage() {
 
   const handleRowClick = (meetingId) => {
     navigate(`/meetings/${meetingId}`);
+  };
+
+  const handleDeleteClick = async (e, meetingId) => {
+    e.stopPropagation();
+    if (deleteConfirmId === meetingId) {
+      try {
+        await api.delete(`/meetings/${meetingId}`);
+        setDeleteConfirmId(null);
+        fetchHistory();
+      } catch (err) {
+        console.error("Failed to delete meeting:", err);
+        alert(err.response?.data?.error || "Failed to delete meeting.");
+      }
+    } else {
+      setDeleteConfirmId(meetingId);
+    }
   };
 
   return (
@@ -125,6 +142,7 @@ export default function HistoryPage() {
                 <th className="pb-2 font-mono font-normal">STATUS</th>
                 <th className="pb-2 font-mono font-normal text-center">PARTICIPANTS</th>
                 <th className="pb-2 font-mono font-normal text-right">ACTION ITEMS</th>
+                <th className="pb-2 font-mono font-normal text-right">ACTIONS</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-muted-sage/10 text-ink-navy cursor-pointer">
@@ -148,6 +166,19 @@ export default function HistoryPage() {
                   </td>
                   <td className="py-3 text-right text-ink-navy font-bold">
                     {meeting.actionItemCount}
+                  </td>
+                  <td className="py-3 text-right">
+                    <button
+                      type="button"
+                      onClick={(e) => handleDeleteClick(e, meeting._id)}
+                      className={`font-bold border px-2 py-0.5 rounded cursor-pointer transition-colors duration-150 text-[10px] uppercase font-mono ${
+                        deleteConfirmId === meeting._id
+                          ? "text-amber-800 border-amber-700 bg-amber-500/10 hover:bg-amber-500/20"
+                          : "text-red-700 border-red-700/20 bg-red-500/5 hover:bg-red-500/10"
+                      }`}
+                    >
+                      {deleteConfirmId === meeting._id ? "Confirm" : "Delete"}
+                    </button>
                   </td>
                 </tr>
               ))}
