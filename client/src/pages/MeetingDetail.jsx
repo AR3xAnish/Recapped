@@ -10,7 +10,6 @@ export default function MeetingDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [processing, setProcessing] = useState(false);
-  const [transcribing, setTranscribing] = useState(false);
 
   // Edit recap states
   const [editedSubject, setEditedSubject] = useState("");
@@ -156,19 +155,6 @@ export default function MeetingDetail() {
     }
   };
 
-  const handleTranscribe = async () => {
-    try {
-      setError(null);
-      setTranscribing(true);
-      const response = await api.post(`/meetings/${id}/transcribe`);
-      setMeeting(response.data);
-    } catch (err) {
-      setError(err.response?.data?.error || "Failed to run audio transcription.");
-    } finally {
-      setTranscribing(false);
-    }
-  };
-
   const handleSave = async () => {
     setSaving(true);
     setSaveSuccess(false);
@@ -299,44 +285,20 @@ export default function MeetingDetail() {
           </h1>
           
           <div className="flex items-center space-x-3">
-            {meeting.source === "audio" && !meeting.rawTranscript ? (
-              <>
-                {(meeting.status === "uploaded" || meeting.status === "failed") && (
-                  <button
-                    type="button"
-                    onClick={handleTranscribe}
-                    disabled={transcribing || meeting.status === "processing"}
-                    className="border border-ink-navy text-ink-navy px-4 py-2 text-xs font-semibold uppercase hover:bg-ink-navy hover:text-paper-cream transition-colors duration-150 cursor-pointer disabled:opacity-50"
-                  >
-                    {transcribing || meeting.status === "processing"
-                      ? "Transcribing Audio..."
-                      : "Transcribe Audio"}
-                  </button>
-                )}
-                {meeting.status === "processing" && (
-                  <span className="text-xs font-mono text-muted-sage animate-pulse">
-                    [ Transcribing audio... ]
-                  </span>
-                )}
-              </>
-            ) : (
-              <>
-                {(meeting.status === "uploaded" || meeting.status === "failed") && (
-                  <button
-                    type="button"
-                    onClick={handleProcess}
-                    disabled={processing}
-                    className="border border-ink-navy text-ink-navy px-4 py-2 text-xs font-semibold uppercase hover:bg-ink-navy hover:text-paper-cream transition-colors duration-150 cursor-pointer disabled:opacity-50"
-                  >
-                    {processing ? "Starting Analysis..." : "Process Meeting"}
-                  </button>
-                )}
-                {meeting.status === "processing" && (
-                  <span className="text-xs font-mono text-muted-sage animate-pulse">
-                    [ Analysis in progress... ]
-                  </span>
-                )}
-              </>
+            {(meeting.status === "uploaded" || meeting.status === "failed") && (
+              <button
+                type="button"
+                onClick={handleProcess}
+                disabled={processing}
+                className="border border-ink-navy text-ink-navy px-4 py-2 text-xs font-semibold uppercase hover:bg-ink-navy hover:text-paper-cream transition-colors duration-150 cursor-pointer disabled:opacity-50"
+              >
+                {processing ? "Starting Analysis..." : "Process Meeting"}
+              </button>
+            )}
+            {meeting.status === "processing" && (
+              <span className="text-xs font-mono text-muted-sage animate-pulse">
+                [ Analysis in progress... ]
+              </span>
             )}
           </div>
         </div>
@@ -352,9 +314,7 @@ export default function MeetingDetail() {
 
         {meeting.status === "failed" && meeting.processingError && (
           <div className="bg-red-500/10 border border-red-500/20 text-red-700 p-4 mt-6 text-xs font-mono">
-            {meeting.source === "audio" && !meeting.rawTranscript
-              ? `TRANSCRIPTION ERROR: ${meeting.processingError}`
-              : `ANALYSIS ERROR: ${meeting.processingError}`}
+            ANALYSIS ERROR: {meeting.processingError}
           </div>
         )}
       </div>
@@ -702,9 +662,7 @@ export default function MeetingDetail() {
             </pre>
           ) : (
             <div className="text-xs font-mono text-muted-sage/50 italic text-center">
-              {meeting.source === "audio"
-                ? "[ Audio file uploaded. Click 'Transcribe Audio' above to transcribe. ]"
-                : "[ Transcript is empty. ]"}
+              [ Transcript is empty. ]
             </div>
           )}
         </div>

@@ -4,19 +4,7 @@ const multer = require("multer");
 const meetingController = require("../controllers/meetingController");
 const ragController = require("../controllers/ragController");
 
-const os = require("os");
-const path = require("path");
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, os.tmpdir()),
-  filename: (req, file, cb) =>
-    cb(
-      null,
-      `audio-${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(
-        file.originalname
-      )}`
-    ),
-});
+const storage = multer.memoryStorage();
 const upload = multer({
   storage: storage,
   limits: {
@@ -47,7 +35,6 @@ router.post("/", (req, res, next) => {
 
 router.get("/", meetingController.getMeetings);
 router.get("/:id", meetingController.getMeetingById);
-router.post("/:id/transcribe", meetingController.transcribeMeeting);
 router.post("/:id/process", meetingController.processMeeting);
 router.post("/:id/export-all", meetingController.exportAllActionItems);
 router.put("/:id", meetingController.updateMeeting);

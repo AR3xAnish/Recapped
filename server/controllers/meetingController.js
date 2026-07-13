@@ -3,7 +3,7 @@ const Integration = require("../models/Integration");
 const mammoth = require("mammoth");
 const PDFParser = require("pdf2json");
 const path = require("path");
-const fs = require("fs");
+
 const { transcribeAudio } = require("../services/transcribe");
 const { extractTranscript } = require("../services/agent/extract");
 const { generateSummaryAndEmail } = require("../services/agent/summarize");
@@ -47,10 +47,6 @@ exports.createMeeting = async (req, res) => {
     let rawTranscript = "";
     let source = "paste";
 
-    let audioFilePath = undefined;
-    let audioOriginalName = undefined;
-    let audioMimeType = undefined;
-
     if (req.file) {
       const file = req.file;
       const ext = path.extname(file.originalname).toLowerCase();
@@ -61,37 +57,32 @@ exports.createMeeting = async (req, res) => {
 
       if (ext === ".mp3" || ext === ".m4a" || ext === ".wav") {
         source = "audio";
-        audioFilePath = file.path;
-        audioOriginalName = file.originalname;
-        audioMimeType = file.mimetype;
-        rawTranscript = ""; // pending transcription
-      } else {
-        const fileBuffer = fs.readFileSync(file.path);
+        console.log(`[Agent] Beginning single-step transcription for audio file: ${file.originalname}`);
         try {
-          if (ext === ".txt") {
-            source = "upload";
-            rawTranscript = fileBuffer.toString("utf-8");
-          } else if (ext === ".docx") {
-            source = "upload";
-            const mammothResult = await mammoth.extractRawText({ buffer: fileBuffer });
-            rawTranscript = mammothResult.value;
-          } else if (ext === ".pdf") {
-            source = "upload";
-            rawTranscript = await parsePdfBuffer(fileBuffer);
-          } else {
-            return res.status(400).json({
-              error:
-                "Unsupported file type. Only .txt, .docx, .pdf, .mp3, .m4a, and .wav are allowed.",
-            });
-          }
-        } finally {
-          // Immediately clean up uploaded text/docx/pdf temp files
-          try {
-            fs.unlinkSync(file.path);
-          } catch (unlinkErr) {
-            console.error("[Agent] Failed to clean up uploaded non-audio temp file:", unlinkErr);
-          }
+          rawTranscript = await transcribeAudio(
+            file.buffer,
+            file.originalname,
+            file.mimetype
+          );
+        } catch (transcribeError) {
+          console.error("[Agent] Single-step transcription failed:", transcribeError);
+          return res.status(500).json({ error: "Transcription failed: " + transcribeError.message });
         }
+      } else if (ext === ".txt") {
+        source = "upload";
+        rawTranscript = file.buffer.toString("utf-8");
+      } else if (ext === ".docx") {
+        source = "upload";
+        const mammothResult = await mammoth.extractRawText({ buffer: file.buffer });
+        rawTranscript = mammothResult.value;
+      } else if (ext === ".pdf") {
+        source = "upload";
+        rawTranscript = await parsePdfBuffer(file.buffer);
+      } else {
+        return res.status(400).json({
+          error:
+            "Unsupported file type. Only .txt, .docx, .pdf, .mp3, .m4a, and .wav are allowed.",
+        });
       }
     } else {
       if (!title || !transcriptText) {
@@ -110,9 +101,6 @@ exports.createMeeting = async (req, res) => {
       source,
       status: "uploaded",
       owner: req.user.id,
-      audioFilePath,
-      audioOriginalName,
-      audioMimeType,
     });
 
     const savedMeeting = await meeting.save();
@@ -386,73 +374,7 @@ exports.getMeetings = async (req, res) => {
   }
 };
 
-exports.transcribeMeeting = async (req, res) => {
-  try {
-    const meeting = await Meeting.findById(req.params.id);
-    if (!meeting) {
-      return res.status(404).json({ error: "Meeting registry entry not found." });
-    }
 
-    if (meeting.owner.toString() !== req.user.id) {
-      return res.status(403).json({ error: "Access denied." });
-    }
-
-    if (meeting.source !== "audio" || !meeting.audioFilePath) {
-      return res.status(400).json({ error: "This meeting registry entry is not an audio log source." });
-    }
-
-    if (!fs.existsSync(meeting.audioFilePath)) {
-      return res.status(400).json({ error: "Audio file not found on server registry." });
-    }
-
-    // Temporarily update status to processing
-    meeting.status = "processing";
-    await meeting.save();
-
-    try {
-      const fileBuffer = fs.readFileSync(meeting.audioFilePath);
-      console.log(`[Agent] Beginning transcription for meeting ${meeting._id}...`);
-      const transcript = await transcribeAudio(
-        fileBuffer,
-        meeting.audioOriginalName,
-        meeting.audioMimeType
-      );
-
-      meeting.rawTranscript = transcript;
-      meeting.status = "uploaded"; // Ready for the /process step
-      meeting.processingError = undefined;
-
-      await meeting.save();
-      res.json(meeting);
-    } catch (transcribeError) {
-      console.error("[Agent] Transcription failed:", transcribeError);
-      meeting.status = "failed";
-      meeting.processingError = transcribeError.message || "Transcription failed.";
-      await meeting.save();
-      res.status(500).json({ error: "Transcription failed: " + transcribeError.message });
-    } finally {
-      // Clean up temp audio file to save disk space and prevent storage leaks
-      if (meeting.audioFilePath) {
-        try {
-          fs.unlink(meeting.audioFilePath, (err) => {
-            if (err) {
-              console.error("[Agent] Temp file cleanup failed:", err);
-            } else {
-              console.log("[Agent] Temp file cleaned up successfully:", meeting.audioFilePath);
-            }
-          });
-          meeting.audioFilePath = undefined;
-          await meeting.save();
-        } catch (cleanupErr) {
-          console.error("[Agent] Cleanup error:", cleanupErr);
-        }
-      }
-    }
-  } catch (error) {
-    console.error("Transcribe Meeting Error:", error);
-    res.status(500).json({ error: "Failed to run audio transcription." });
-  }
-};
 
 const runNotionExport = async (
   userId,

@@ -20,15 +20,6 @@ const MeetingSchema = new mongoose.Schema({
     enum: ["uploaded", "processing", "processed", "failed"],
     default: "uploaded",
   },
-  audioFilePath: {
-    type: String,
-  },
-  audioOriginalName: {
-    type: String,
-  },
-  audioMimeType: {
-    type: String,
-  },
   participants: [
     {
       name: { type: String, trim: true },

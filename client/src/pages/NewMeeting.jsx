@@ -290,7 +290,11 @@ export default function NewMeeting() {
             disabled={submitting}
             className="w-full border border-ink-navy text-ink-navy py-3 text-sm font-bold tracking-wide hover:bg-ink-navy hover:text-paper-cream transition-colors duration-150 cursor-pointer disabled:opacity-50"
           >
-            {submitting ? "RECORDING ENTRY..." : "COMMIT TO LEDGER"}
+            {submitting
+              ? activeTab === "audio"
+                ? "TRANSCRIBING YOUR AUDIO..."
+                : "RECORDING ENTRY..."
+              : "COMMIT TO LEDGER"}
           </button>
         </div>
       </form>
