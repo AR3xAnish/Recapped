@@ -23,7 +23,7 @@ exports.connectNotion = async (req, res) => {
 };
 
 exports.notionCallback = async (req, res) => {
-  const settingsBaseUrl = "http://localhost:5173/settings";
+  const settingsBaseUrl = process.env.ALLOWED_ORIGINS + "/settings";
   try {
     const { code, state, error: notionError } = req.query;
 
@@ -69,7 +69,7 @@ exports.notionCallback = async (req, res) => {
     // 2. Exchange authorization code for access token via real Notion API
     console.log(`[Notion OAuth Callback] Exchanging code for user ${targetUserId}...`);
     const authHeader = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
-    
+
     const response = await fetch("https://api.notion.com/v1/oauth/token", {
       method: "POST",
       headers: {
