@@ -4,7 +4,19 @@ const multer = require("multer");
 const meetingController = require("../controllers/meetingController");
 const ragController = require("../controllers/ragController");
 
-const storage = multer.memoryStorage();
+const os = require("os");
+const path = require("path");
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, os.tmpdir()),
+  filename: (req, file, cb) =>
+    cb(
+      null,
+      `audio-${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(
+        file.originalname
+      )}`
+    ),
+});
 const upload = multer({
   storage: storage,
   limits: {

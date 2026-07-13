@@ -61,31 +61,37 @@ exports.createMeeting = async (req, res) => {
 
       if (ext === ".mp3" || ext === ".m4a" || ext === ".wav") {
         source = "audio";
-        const uploadsDir = path.join(__dirname, "../uploads");
-        if (!fs.existsSync(uploadsDir)) {
-          fs.mkdirSync(uploadsDir, { recursive: true });
-        }
-        const filename = `audio-${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
-        audioFilePath = path.join(uploadsDir, filename);
-        fs.writeFileSync(audioFilePath, file.buffer);
+        audioFilePath = file.path;
         audioOriginalName = file.originalname;
         audioMimeType = file.mimetype;
         rawTranscript = ""; // pending transcription
-      } else if (ext === ".txt") {
-        source = "upload";
-        rawTranscript = file.buffer.toString("utf-8");
-      } else if (ext === ".docx") {
-        source = "upload";
-        const mammothResult = await mammoth.extractRawText({ buffer: file.buffer });
-        rawTranscript = mammothResult.value;
-      } else if (ext === ".pdf") {
-        source = "upload";
-        rawTranscript = await parsePdfBuffer(file.buffer);
       } else {
-        return res.status(400).json({
-          error:
-            "Unsupported file type. Only .txt, .docx, .pdf, .mp3, .m4a, and .wav are allowed.",
-        });
+        const fileBuffer = fs.readFileSync(file.path);
+        try {
+          if (ext === ".txt") {
+            source = "upload";
+            rawTranscript = fileBuffer.toString("utf-8");
+          } else if (ext === ".docx") {
+            source = "upload";
+            const mammothResult = await mammoth.extractRawText({ buffer: fileBuffer });
+            rawTranscript = mammothResult.value;
+          } else if (ext === ".pdf") {
+            source = "upload";
+            rawTranscript = await parsePdfBuffer(fileBuffer);
+          } else {
+            return res.status(400).json({
+              error:
+                "Unsupported file type. Only .txt, .docx, .pdf, .mp3, .m4a, and .wav are allowed.",
+            });
+          }
+        } finally {
+          // Immediately clean up uploaded text/docx/pdf temp files
+          try {
+            fs.unlinkSync(file.path);
+          } catch (unlinkErr) {
+            console.error("[Agent] Failed to clean up uploaded non-audio temp file:", unlinkErr);
+          }
+        }
       }
     } else {
       if (!title || !transcriptText) {
@@ -403,9 +409,8 @@ exports.transcribeMeeting = async (req, res) => {
     meeting.status = "processing";
     await meeting.save();
 
-    const fileBuffer = fs.readFileSync(meeting.audioFilePath);
-
     try {
+      const fileBuffer = fs.readFileSync(meeting.audioFilePath);
       console.log(`[Agent] Beginning transcription for meeting ${meeting._id}...`);
       const transcript = await transcribeAudio(
         fileBuffer,
@@ -417,14 +422,6 @@ exports.transcribeMeeting = async (req, res) => {
       meeting.status = "uploaded"; // Ready for the /process step
       meeting.processingError = undefined;
 
-      // Clean up audio file to save disk space
-      try {
-        fs.unlinkSync(meeting.audioFilePath);
-        meeting.audioFilePath = undefined;
-      } catch (unlinkErr) {
-        console.error("[Agent] Failed to clean up audio file:", unlinkErr);
-      }
-
       await meeting.save();
       res.json(meeting);
     } catch (transcribeError) {
@@ -433,6 +430,23 @@ exports.transcribeMeeting = async (req, res) => {
       meeting.processingError = transcribeError.message || "Transcription failed.";
       await meeting.save();
       res.status(500).json({ error: "Transcription failed: " + transcribeError.message });
+    } finally {
+      // Clean up temp audio file to save disk space and prevent storage leaks
+      if (meeting.audioFilePath) {
+        try {
+          fs.unlink(meeting.audioFilePath, (err) => {
+            if (err) {
+              console.error("[Agent] Temp file cleanup failed:", err);
+            } else {
+              console.log("[Agent] Temp file cleaned up successfully:", meeting.audioFilePath);
+            }
+          });
+          meeting.audioFilePath = undefined;
+          await meeting.save();
+        } catch (cleanupErr) {
+          console.error("[Agent] Cleanup error:", cleanupErr);
+        }
+      }
     }
   } catch (error) {
     console.error("Transcribe Meeting Error:", error);
