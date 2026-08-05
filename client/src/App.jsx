@@ -361,46 +361,54 @@ function About() {
       <div className="pb-8 border-b border-muted-sage/30">
         <div className="flex items-center justify-between text-xs font-mono text-muted-sage">
           <span>PAGE NO: 02</span>
-          <span>DATE: {new Date().toLocaleDateString()}</span>
         </div>
         <h1 className="text-3xl font-extrabold text-ink-navy mt-4 tracking-tight">
-          About the Recapped Ledger
+          About Recapped
         </h1>
         <p className="text-muted-sage mt-2 text-base max-w-xl font-normal leading-relaxed">
-          Technical ledger metadata and configurations for the scaffold.
+          The intelligent meeting workspace that converts conversations into actions.
         </p>
       </div>
 
       <div className="py-8 border-b border-muted-sage/30 space-y-6">
         <p className="text-ink-navy text-base leading-relaxed">
-          The Recapped application scaffolding uses thin horizontal ruled separators and flat geometric boundaries to organize technical logs and connection verification.
+          Recapped is a comprehensive productivity platform designed to bridge the gap between spoken discussions and team execution. By combining speech-to-text processing, natural language understanding, and automated integrations, it ensures commitments are never forgotten.
         </p>
 
-        <div className="space-y-4">
+        <div className="space-y-6 pt-4">
           <div className="flex items-start">
-            <span className="text-muted-sage font-mono mr-3">ITEM_01:</span>
+            <span className="text-muted-sage font-mono mr-4 text-xs">FEATURE_01</span>
             <div>
-              <strong className="text-ink-navy block">Client Architecture</strong>
-              <span className="text-muted-sage text-sm">
-                Vite client structured with React Router and Axios inside <span className="font-mono text-xs">/client</span>.
+              <strong className="text-ink-navy block font-semibold text-sm">Inline Transcription & Analysis</strong>
+              <span className="text-muted-sage text-sm leading-relaxed block mt-1">
+                Upload audio recordings or paste meeting transcripts to automatically extract participants, summarize key discussions, and parse action-item commitments with confidence scores.
               </span>
             </div>
           </div>
           <div className="flex items-start">
-            <span className="text-muted-sage font-mono mr-3">ITEM_02:</span>
+            <span className="text-muted-sage font-mono mr-4 text-xs">FEATURE_02</span>
             <div>
-              <strong className="text-ink-navy block">Server Architecture</strong>
-              <span className="text-muted-sage text-sm">
-                Node.js Express backend organized under routes, controllers, models, and middleware inside <span className="font-mono text-xs">/server</span>.
+              <strong className="text-ink-navy block font-semibold text-sm">Action Items Kanban Board</strong>
+              <span className="text-muted-sage text-sm leading-relaxed block mt-1">
+                Manage, assign, and organize extracted tasks across all meetings in a unified, visual Kanban board. Drag-and-drop actions sync progress back to the database in real-time.
               </span>
             </div>
           </div>
           <div className="flex items-start">
-            <span className="text-muted-sage font-mono mr-3">ITEM_03:</span>
+            <span className="text-muted-sage font-mono mr-4 text-xs">FEATURE_03</span>
             <div>
-              <strong className="text-ink-navy block">Shared Task Runner</strong>
-              <span className="text-muted-sage text-sm">
-                A root package manager using <span className="font-mono text-xs">concurrently</span> to boot up both servers simultaneously.
+              <strong className="text-ink-navy block font-semibold text-sm">RAG-Powered Vector Q&A Search</strong>
+              <span className="text-muted-sage text-sm leading-relaxed block mt-1">
+                Query transcript details directly. Recapped chunks and indexes transcripts to answer specific questions, find ownership targets, and retrieve meeting history details.
+              </span>
+            </div>
+          </div>
+          <div className="flex items-start">
+            <span className="text-muted-sage font-mono mr-4 text-xs">FEATURE_04</span>
+            <div>
+              <strong className="text-ink-navy block font-semibold text-sm">Notion & Slack Workspaces Sync</strong>
+              <span className="text-muted-sage text-sm leading-relaxed block mt-1">
+                Connect and sync commitments directly to your team’s workspaces. Automatically publish summarized recaps to Slack channels, and export action tasks to Notion tables.
               </span>
             </div>
           </div>
