@@ -259,7 +259,7 @@ exports.connectSlack = async (req, res) => {
     const rawState = encrypt(JSON.stringify(stateObj));
     const state = Buffer.from(rawState, "utf8").toString("base64url");
 
-    const scope = "chat:write,channels:read,channels:join";
+    const scope = "chat:write,channels:read,chat:write.public";
     const authorizeUrl = `https://slack.com/oauth/v2/authorize?client_id=${clientId}&scope=${encodeURIComponent(
       scope
     )}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`;

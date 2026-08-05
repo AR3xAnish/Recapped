@@ -68,23 +68,6 @@ async function postMeetingRecap(userId, meeting) {
       },
     ];
 
-    // Programmatically join the channel before posting to ensure member access
-    try {
-      console.log(`[Slack Service] Programmatically joining channel ${integration.defaultChannelId}...`);
-      await fetch("https://slack.com/api/conversations.join", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json; charset=utf-8",
-        },
-        body: JSON.stringify({
-          channel: integration.defaultChannelId,
-        }),
-      });
-    } catch (joinErr) {
-      console.warn("[Slack Service] Programmatic channel join failed:", joinErr);
-    }
-
     console.log(
       `[Slack Service] Posting recap for meeting ${meeting._id} to channel ${integration.defaultChannelId}...`
     );
