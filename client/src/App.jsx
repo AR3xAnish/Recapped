@@ -349,6 +349,71 @@ function Dashboard() {
           </div>
         )}
       </div>
+
+      {/* Notion & Slack Integrations Overview */}
+      <div className="py-8 border-t border-muted-sage/20">
+        <h2 className="text-xs font-mono uppercase tracking-wider text-muted-sage mb-8">
+          Connected Workspaces
+        </h2>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Notion Card */}
+          <div className="border border-muted-sage/30 p-6 bg-paper-cream/40 flex flex-col justify-between space-y-4">
+            <div>
+              <div className="flex justify-between items-center text-[10px] font-mono text-muted-sage border-b border-muted-sage/20 pb-2 mb-4">
+                <span>WORKSPACE INTEGRATION</span>
+                <span>NOTION</span>
+              </div>
+              <h3 className="text-base font-bold text-ink-navy">
+                Sync Action Items to Notion Databases
+              </h3>
+              <p className="text-sm text-muted-sage mt-2 leading-relaxed font-sans">
+                Connect your workspace to push meeting commitments directly into your team databases.
+              </p>
+              <ul className="mt-4 space-y-2 text-xs font-mono text-ink-navy">
+                <li className="flex items-center">
+                  <span className="text-highlighter-gold mr-2">▶</span> 1. Click &quot;Connect Notion&quot; in Settings
+                </li>
+                <li className="flex items-center">
+                  <span className="text-highlighter-gold mr-2">▶</span> 2. Choose pages to share with Recapped
+                </li>
+                <li className="flex items-center">
+                  <span className="text-highlighter-gold mr-2">▶</span> 3. Click &quot;Export&quot; on any action item
+                </li>
+              </ul>
+            </div>
+            
+          </div>
+
+          {/* Slack Card */}
+          <div className="border border-muted-sage/30 p-6 bg-paper-cream/40 flex flex-col justify-between space-y-4">
+            <div>
+              <div className="flex justify-between items-center text-[10px] font-mono text-muted-sage border-b border-muted-sage/20 pb-2 mb-4">
+                <span>CHAT CLIENT CONNECTION</span>
+                <span>SLACK</span>
+              </div>
+              <h3 className="text-base font-bold text-ink-navy">
+                Stream Recaps to Slack Channels
+              </h3>
+              <p className="text-sm text-muted-sage mt-2 leading-relaxed font-sans">
+                Send automated action item summaries and follow-ups straight to your communication channels.
+              </p>
+              <ul className="mt-4 space-y-2 text-xs font-mono text-ink-navy">
+                <li className="flex items-center">
+                  <span className="text-highlighter-gold mr-2">▶</span> 1. Click &quot;Connect Slack&quot; in Settings
+                </li>
+                <li className="flex items-center">
+                  <span className="text-highlighter-gold mr-2">▶</span> 2. Pick your default target channel
+                </li>
+                <li className="flex items-center">
+                  <span className="text-highlighter-gold mr-2">▶</span> 3. Recaps post automatically on process
+                </li>
+              </ul>
+            </div>
+            
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -359,9 +424,7 @@ function About() {
     <div className="max-w-4xl mx-auto py-16 px-8">
       {/* Ledger Header */}
       <div className="pb-8 border-b border-muted-sage/30">
-        <div className="flex items-center justify-between text-xs font-mono text-muted-sage">
-          <span>PAGE NO: 02</span>
-        </div>
+        
         <h1 className="text-3xl font-extrabold text-ink-navy mt-4 tracking-tight">
           About Recapped
         </h1>

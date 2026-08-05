@@ -281,7 +281,7 @@ export default function Board() {
       {/* Board Header */}
       <div className="pb-8 border-b border-muted-sage/30 mb-8">
         <div className="flex items-center justify-between text-xs font-mono text-muted-sage">
-          <span>BOARD SHEET NO: 01</span>
+          {/* <span>BOARD SHEET NO: 01</span> */}
           <span>ENTRIES: {filteredItems.length}</span>
         </div>
         <h1 className="text-3xl font-extrabold text-ink-navy mt-4 tracking-tight">

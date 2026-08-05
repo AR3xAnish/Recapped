@@ -207,10 +207,7 @@ export default function Settings() {
     <div className="max-w-4xl mx-auto py-16 px-8">
       {/* Settings Header */}
       <div className="pb-8 border-b border-muted-sage/30 mb-8">
-        <div className="flex items-center justify-between text-xs font-mono text-muted-sage">
-          <span>PAGE NO: 03</span>
-          <span>DATE: {new Date().toLocaleDateString()}</span>
-        </div>
+        
         <h1 className="text-3xl font-extrabold text-ink-navy mt-4 tracking-tight">
           Integration settings sheet
         </h1>
