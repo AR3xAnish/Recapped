@@ -21,23 +21,43 @@ export function Highlight({ children }) {
   );
 }
 
+
 // Navigation Bar
 function Navigation({ isDark, setIsDark }) {
   const location = useLocation();
   const { user, logout } = useContext(AuthContext);
   const isActive = (path) => location.pathname === path;
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <nav className="bg-paper-cream border-b border-muted-sage/20 px-8 py-6 flex items-center justify-between transition-colors duration-300">
-      <div className="flex items-center space-x-2">
-        <span className="text-2xl font-black tracking-tight text-ink-navy">
-          Recapped
-        </span>
-        <span className="text-[10px] uppercase tracking-wider text-muted-sage font-mono border border-muted-sage/30 px-1.5 py-0.5">
-          Ledger v1.0
-        </span>
+    <nav className="bg-paper-cream border-b border-muted-sage/20 px-6 py-4 md:px-8 md:py-6 flex flex-col md:flex-row md:items-center md:justify-between transition-colors duration-300 relative z-50">
+      <div className="flex items-center justify-between w-full md:w-auto">
+        <div className="flex items-center space-x-2">
+          <span className="text-2xl font-black tracking-tight text-ink-navy">
+            Recapped
+          </span>
+          <span className="text-[10px] uppercase tracking-wider text-muted-sage font-mono border border-muted-sage/30 px-1.5 py-0.5">
+            Ledger v1.0
+          </span>
+        </div>
+        {/* Burger Button for Mobile */}
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="md:hidden text-ink-navy border border-ink-navy/20 p-1.5 hover:bg-ink-navy/5 transition-colors focus:outline-none"
+          aria-label="Toggle menu"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            {isOpen ? (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+            ) : (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+            )}
+          </svg>
+        </button>
       </div>
-      <div className="flex items-center space-x-8">
+
+      {/* Desktop Menu */}
+      <div className="hidden md:flex items-center space-x-6 lg:space-x-8">
         {user ? (
           <>
             <Link
@@ -88,7 +108,7 @@ function Navigation({ isDark, setIsDark }) {
             >
               About Ledger
             </Link>
-            <span className="text-xs font-mono text-muted-sage hidden md:inline">
+            <span className="text-xs font-mono text-muted-sage hidden lg:inline">
               SCRIBE: <span className="text-ink-navy font-semibold">[{user.name}]</span>
             </span>
             <button
@@ -121,6 +141,96 @@ function Navigation({ isDark, setIsDark }) {
           Mode: {isDark ? "Dark" : "Light"}
         </button>
       </div>
+
+      {/* Mobile Menu Panel */}
+      {isOpen && (
+        <div className="md:hidden mt-4 pt-4 border-t border-muted-sage/20 flex flex-col space-y-4 font-mono text-sm">
+          {user ? (
+            <>
+              <Link
+                to="/dashboard"
+                onClick={() => setIsOpen(false)}
+                className={`py-1.5 ${isActive("/dashboard") ? "text-ink-navy font-bold" : "text-muted-sage"}`}
+              >
+                Home
+              </Link>
+              <Link
+                to="/meetings/new"
+                onClick={() => setIsOpen(false)}
+                className={`py-1.5 ${isActive("/meetings/new") ? "text-ink-navy font-bold" : "text-muted-sage"}`}
+              >
+                New Entry
+              </Link>
+              <Link
+                to="/board"
+                onClick={() => setIsOpen(false)}
+                className={`py-1.5 ${isActive("/board") ? "text-ink-navy font-bold" : "text-muted-sage"}`}
+              >
+                Board
+              </Link>
+              <Link
+                to="/history"
+                onClick={() => setIsOpen(false)}
+                className={`py-1.5 ${isActive("/history") ? "text-ink-navy font-bold" : "text-muted-sage"}`}
+              >
+                History
+              </Link>
+              <Link
+                to="/settings"
+                onClick={() => setIsOpen(false)}
+                className={`py-1.5 ${isActive("/settings") ? "text-ink-navy font-bold" : "text-muted-sage"}`}
+              >
+                Settings
+              </Link>
+              <Link
+                to="/about"
+                onClick={() => setIsOpen(false)}
+                className={`py-1.5 ${isActive("/about") ? "text-ink-navy font-bold" : "text-muted-sage"}`}
+              >
+                About Ledger
+              </Link>
+              <div className="py-1.5 text-xs text-muted-sage border-t border-muted-sage/10 pt-3">
+                SCRIBE: <span className="text-ink-navy font-semibold">[{user.name}]</span>
+              </div>
+              <button
+                onClick={() => {
+                  setIsOpen(false);
+                  logout();
+                }}
+                className="w-full text-left border border-ink-navy text-ink-navy px-3 py-2 text-xs font-mono uppercase hover:bg-ink-navy hover:text-paper-cream transition-colors duration-150 cursor-pointer"
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                to="/login"
+                onClick={() => setIsOpen(false)}
+                className="py-1.5 text-muted-sage hover:text-ink-navy"
+              >
+                Sign In
+              </Link>
+              <Link
+                to="/register"
+                onClick={() => setIsOpen(false)}
+                className="w-full text-center border border-ink-navy text-ink-navy py-2 text-xs font-mono uppercase hover:bg-ink-navy hover:text-paper-cream transition-colors duration-150"
+              >
+                Get Started
+              </Link>
+            </>
+          )}
+          <button
+            onClick={() => {
+              setIsOpen(false);
+              setIsDark(!isDark);
+            }}
+            className="w-full text-center border border-ink-navy text-ink-navy py-2 text-xs font-mono uppercase hover:bg-ink-navy hover:text-paper-cream transition-colors duration-150 cursor-pointer"
+          >
+            Mode: {isDark ? "Dark" : "Light"}
+          </button>
+        </div>
+      )}
     </nav>
   );
 }
