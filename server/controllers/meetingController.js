@@ -11,11 +11,11 @@ const { generateSummaryAndEmail } = require("../services/agent/summarize");
 const parsePdfBuffer = (buffer) => {
   return new Promise((resolve, reject) => {
     const pdfParser = new PDFParser();
-    
+
     pdfParser.on("pdfParser_dataError", (errData) => {
       reject(new Error(errData.parserError || "Failed to parse PDF"));
     });
-    
+
     pdfParser.on("pdfParser_dataReady", (pdfData) => {
       try {
         let text = "";
@@ -181,6 +181,12 @@ exports.processMeeting = async (req, res) => {
             freshMeeting.followUpEmail = summaryResult.followUpEmail;
             await freshMeeting.save();
             console.log(`[Agent] Meeting ${freshMeeting._id} summarization completed successfully.`);
+
+            // Trigger background Slack notification if integrated
+            const { postMeetingRecap } = require("../services/slack");
+            postMeetingRecap(freshMeeting.owner, freshMeeting).catch((slackErr) => {
+              console.error("[Agent] Slack notification failed to execute:", slackErr);
+            });
 
             // Trigger background indexing without blocking rest of request completion
             const { indexMeeting } = require("../services/rag");

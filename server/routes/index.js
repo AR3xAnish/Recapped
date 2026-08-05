@@ -12,6 +12,7 @@ const auth = require("../middleware/auth");
 router.use("/", healthRouter);
 router.use("/auth", authRouter);
 router.get("/integrations/notion/callback", integrationController.notionCallback);
+router.get("/integrations/slack/callback", integrationController.slackCallback);
 
 // Apply auth middleware to all subsequent routes
 router.use(auth);

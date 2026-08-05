@@ -17,6 +17,17 @@ export default function Settings() {
   const [successMsg, setSuccessMsg] = useState("");
   const [showPicker, setShowPicker] = useState(false);
 
+  // Slack Integration States
+  const [slackStatus, setSlackStatus] = useState({
+    connected: false,
+    defaultChannelId: null,
+    defaultChannelName: null,
+    teamName: null,
+  });
+  const [slackChannels, setSlackChannels] = useState([]);
+  const [slackChannelsLoading, setSlackChannelsLoading] = useState(false);
+  const [showSlackPicker, setShowSlackPicker] = useState(false);
+
   const fetchDatabases = useCallback(async () => {
     setDbLoading(true);
     try {
@@ -34,19 +45,48 @@ export default function Settings() {
     }
   }, []);
 
+  const fetchSlackChannels = useCallback(async () => {
+    setSlackChannelsLoading(true);
+    try {
+      const response = await api.get("/integrations/slack/channels");
+      setSlackChannels(response.data);
+    } catch (err) {
+      if (err.response?.data?.code === "SLACK_UNAUTHORIZED") {
+        setError("Slack connection has expired. Please reconnect.");
+        setSlackStatus({ connected: false, defaultChannelId: null, defaultChannelName: null, teamName: null });
+      } else {
+        setError(err.response?.data?.error || "Failed to load Slack channels.");
+      }
+    } finally {
+      setSlackChannelsLoading(false);
+    }
+  }, []);
+
   const fetchStatus = useCallback(async () => {
     try {
       const response = await api.get("/integrations/notion/status");
       setStatus(response.data);
     } catch (err) {
       console.error("Failed to query integration status:", err);
-    } finally {
-      setLoading(false);
+    }
+  }, []);
+
+  const fetchSlackStatus = useCallback(async () => {
+    try {
+      const response = await api.get("/integrations/slack/status");
+      setSlackStatus(response.data);
+    } catch (err) {
+      console.error("Failed to query Slack status:", err);
     }
   }, []);
 
   useEffect(() => {
-    fetchStatus();
+    const initData = async () => {
+      await Promise.all([fetchStatus(), fetchSlackStatus()]);
+      setLoading(false);
+    };
+    initData();
+
     const successParam = searchParams.get("success");
     const errorParam = searchParams.get("error");
 
@@ -54,10 +94,14 @@ export default function Settings() {
       setSuccessMsg("Successfully connected to Notion!");
       setTimeout(() => setSuccessMsg(""), 5000);
     }
+    if (successParam === "slack_connected") {
+      setSuccessMsg("Successfully connected to Slack!");
+      setTimeout(() => setSuccessMsg(""), 5000);
+    }
     if (errorParam) {
       setError(errorParam);
     }
-  }, [searchParams, fetchStatus]);
+  }, [searchParams, fetchStatus, fetchSlackStatus]);
 
   const handleConnect = async () => {
     setError(null);
@@ -102,6 +146,52 @@ export default function Settings() {
       setTimeout(() => setSuccessMsg(""), 5000);
     } catch (err) {
       setError(err.response?.data?.error || "Failed to select database.");
+    }
+  };
+
+  const handleConnectSlack = async () => {
+    setError(null);
+    try {
+      const response = await api.post("/integrations/slack/connect");
+      if (response.data.url) {
+        window.location.href = response.data.url;
+      }
+    } catch (err) {
+      setError(err.response?.data?.error || "Failed to initiate Slack connection.");
+    }
+  };
+
+  const handleDisconnectSlack = async () => {
+    setError(null);
+    try {
+      await api.delete("/integrations/slack/disconnect");
+      setSlackStatus({ connected: false, defaultChannelId: null, defaultChannelName: null, teamName: null });
+      setSlackChannels([]);
+      setSuccessMsg("Disconnected from Slack.");
+      setTimeout(() => setSuccessMsg(""), 5000);
+    } catch (err) {
+      setError(err.response?.data?.error || "Failed to disconnect from Slack.");
+    }
+  };
+
+  const handleSelectSlackChannel = async (e) => {
+    const selectedId = e.target.value;
+    if (!selectedId) return;
+
+    setError(null);
+    const selectedCh = slackChannels.find((ch) => ch.id === selectedId);
+    const chName = selectedCh ? selectedCh.name : "Selected Channel";
+
+    try {
+      await api.post("/integrations/slack/channel", {
+        channelId: selectedId,
+        channelName: chName,
+      });
+      setSlackStatus((prev) => ({ ...prev, defaultChannelId: selectedId, defaultChannelName: chName }));
+      setSuccessMsg(`Slack default channel set to "${chName}"`);
+      setTimeout(() => setSuccessMsg(""), 5000);
+    } catch (err) {
+      setError(err.response?.data?.error || "Failed to select Slack channel.");
     }
   };
 
@@ -256,6 +346,126 @@ export default function Settings() {
                 </ol>
                 <p className="leading-relaxed font-sans text-xs pt-1 border-t border-muted-sage/10">
                   Recapped will automatically create a database named <strong>&quot;Recapped Action Items&quot;</strong> under the shared page so that page exports work instantly without manual configuration.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Slack Integration Card Block */}
+      <div className="border border-muted-sage/30 p-8 bg-paper-cream/40 space-y-6 mt-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-muted-sage/20 pb-4">
+          <div>
+            <h2 className="text-lg font-bold text-ink-navy">Slack Workspace Integration</h2>
+            <p className="text-xs text-muted-sage font-mono mt-1">PROVIDER ID: slack</p>
+          </div>
+          <div className="mt-4 md:mt-0 font-mono text-xs">
+            {slackStatus.connected ? (
+              <span className="bg-emerald-100 text-emerald-800 px-3 py-1 font-semibold uppercase tracking-wide">
+                Connected
+              </span>
+            ) : (
+              <span className="bg-ink-navy/5 border border-muted-sage/30 text-ink-navy px-3 py-1 uppercase tracking-wide">
+                Disconnected
+              </span>
+            )}
+          </div>
+        </div>
+
+        {slackStatus.connected ? (
+          <div className="space-y-6">
+            <p className="text-sm text-ink-navy leading-relaxed font-sans">
+              Recapped is authorized to post meeting recaps and action item summaries to your Slack workspace ({slackStatus.teamName || "Slack Team"}).
+            </p>
+
+            <div className="flex flex-col space-y-4 p-5 border border-muted-sage/20 bg-paper-cream/60 font-mono text-xs text-ink-navy">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] text-muted-sage uppercase block">Recap Post Target</span>
+                  <span className="text-sm font-semibold mt-1 font-sans">
+                    {slackStatus.defaultChannelId ? (
+                      <>Posting automatically to: <Highlight>{slackStatus.defaultChannelName || slackStatus.defaultChannelId}</Highlight> in Slack</>
+                    ) : (
+                      <span className="text-amber-700 animate-pulse">[ Set a default Slack channel to post recaps... ]</span>
+                    )}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowSlackPicker(!showSlackPicker);
+                    if (!showSlackPicker && slackChannels.length === 0) {
+                      fetchSlackChannels();
+                    }
+                  }}
+                  className="text-[10px] underline text-ink-navy font-bold uppercase hover:text-muted-sage cursor-pointer ml-4"
+                >
+                  {showSlackPicker ? "Cancel" : "Change channel"}
+                </button>
+              </div>
+
+              {showSlackPicker && (
+                <div className="pt-4 border-t border-muted-sage/10 flex flex-col space-y-2">
+                  <label className="text-[10px] text-muted-sage uppercase">Select Default Slack Channel</label>
+                  {slackChannelsLoading ? (
+                    <span className="text-muted-sage animate-pulse">Loading workspace channels...</span>
+                  ) : slackChannels.length > 0 ? (
+                    <select
+                      value={slackStatus.defaultChannelId || ""}
+                      onChange={handleSelectSlackChannel}
+                      className="bg-transparent border border-muted-sage/30 text-ink-navy px-3 py-2 outline-none cursor-pointer focus:border-ink-navy font-sans text-sm max-w-md"
+                    >
+                      <option value="" disabled>— Select Workspace Channel —</option>
+                      {slackChannels.map((ch) => (
+                        <option key={ch.id} value={ch.id}>{ch.name}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span className="text-red-700 font-sans text-xs">No channels found. Ensure the Slack bot is invited to your channels.</span>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="pt-4 flex justify-end items-center border-t border-muted-sage/20">
+              <button
+                type="button"
+                onClick={handleDisconnectSlack}
+                className="border border-red-700 text-red-700 px-4 py-2 text-xs font-semibold uppercase hover:bg-red-700 hover:text-paper-cream transition-colors duration-150 cursor-pointer"
+              >
+                Disconnect Slack
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            <p className="text-sm text-muted-sage leading-relaxed font-sans">
+              Connect your Slack workspace to automatically publish formatted block recaps and assignable action item lists directly into a default Slack channel.
+            </p>
+            <div className="pt-4 flex flex-col space-y-4">
+              <div>
+                <button
+                  type="button"
+                  onClick={handleConnectSlack}
+                  className="border border-ink-navy text-ink-navy px-6 py-3 text-sm font-bold tracking-wide hover:bg-ink-navy hover:text-paper-cream transition-colors duration-150 cursor-pointer font-sans"
+                >
+                  CONNECT SLACK ACCOUNT
+                </button>
+              </div>
+
+              <div className="border border-dashed border-muted-sage/40 bg-paper-cream/30 p-5 font-mono text-xs text-muted-sage space-y-2 max-w-xl">
+                <span className="font-bold text-ink-navy uppercase block">Setup Instructions Guide</span>
+                <p className="leading-relaxed font-sans text-xs">
+                  When the Slack authorization page loads:
+                </p>
+                <ol className="list-decimal list-inside space-y-1 pl-1 font-sans text-xs">
+                  <li>Choose the target Slack workspace in the top right.</li>
+                  <li>Review permissions request (`chat:write` and `channels:read`).</li>
+                  <li>Click <strong>Allow</strong> to grant authorization and complete connection.</li>
+                </ol>
+                <p className="leading-relaxed font-sans text-xs pt-1 border-t border-muted-sage/10">
+                  Once connected, select a default channel from the target channel dropdown menu to begin automated recap publishing.
                 </p>
               </div>
             </div>

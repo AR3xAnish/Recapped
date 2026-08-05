@@ -8,7 +8,7 @@ const IntegrationSchema = new mongoose.Schema({
   },
   provider: {
     type: String,
-    enum: ["notion"],
+    enum: ["notion", "slack"],
     required: true,
   },
   accessToken: {
@@ -22,6 +22,18 @@ const IntegrationSchema = new mongoose.Schema({
     type: String,
   },
   workspaceName: {
+    type: String,
+  },
+  teamId: {
+    type: String,
+  },
+  teamName: {
+    type: String,
+  },
+  defaultChannelId: {
+    type: String,
+  },
+  defaultChannelName: {
     type: String,
   },
   createdAt: {

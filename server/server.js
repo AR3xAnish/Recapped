@@ -7,17 +7,21 @@ const apiRoutes = require("./routes");
 // Load environment variables from .env
 dotenv.config();
 
-// Enforce Notion environment configuration
+// Enforce Notion and Slack environment configuration
 const requiredEnvVars = [
   "NOTION_CLIENT_ID",
   "NOTION_CLIENT_SECRET",
   "NOTION_REDIRECT_URI",
   "NOTION_ENCRYPTION_KEY",
+  "SLACK_CLIENT_ID",
+  "SLACK_CLIENT_SECRET",
+  "SLACK_SIGNING_SECRET",
+  "SLACK_REDIRECT_URI",
 ];
 const missingEnvVars = requiredEnvVars.filter((v) => !process.env[v]);
 if (missingEnvVars.length > 0) {
   throw new Error(
-    `[Startup Error] Missing required Notion environment configuration variables: ${missingEnvVars.join(
+    `[Startup Error] Missing required integration environment configuration variables: ${missingEnvVars.join(
       ", "
     )}`
   );
