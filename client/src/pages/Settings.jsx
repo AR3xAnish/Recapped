@@ -53,7 +53,12 @@ export default function Settings() {
     } catch (err) {
       if (err.response?.data?.code === "SLACK_UNAUTHORIZED") {
         setError("Slack connection has expired. Please reconnect.");
-        setSlackStatus({ connected: false, defaultChannelId: null, defaultChannelName: null, teamName: null });
+        setSlackStatus({
+          connected: false,
+          defaultChannelId: null,
+          defaultChannelName: null,
+          teamName: null,
+        });
       } else {
         setError(err.response?.data?.error || "Failed to load Slack channels.");
       }
@@ -165,7 +170,12 @@ export default function Settings() {
     setError(null);
     try {
       await api.delete("/integrations/slack/disconnect");
-      setSlackStatus({ connected: false, defaultChannelId: null, defaultChannelName: null, teamName: null });
+      setSlackStatus({
+        connected: false,
+        defaultChannelId: null,
+        defaultChannelName: null,
+        teamName: null,
+      });
       setSlackChannels([]);
       setSuccessMsg("Disconnected from Slack.");
       setTimeout(() => setSuccessMsg(""), 5000);
@@ -187,7 +197,11 @@ export default function Settings() {
         channelId: selectedId,
         channelName: chName,
       });
-      setSlackStatus((prev) => ({ ...prev, defaultChannelId: selectedId, defaultChannelName: chName }));
+      setSlackStatus((prev) => ({
+        ...prev,
+        defaultChannelId: selectedId,
+        defaultChannelName: chName,
+      }));
       setSuccessMsg(`Slack default channel set to "${chName}"`);
       setTimeout(() => setSuccessMsg(""), 5000);
     } catch (err) {
@@ -207,7 +221,6 @@ export default function Settings() {
     <div className="max-w-4xl mx-auto py-16 px-8">
       {/* Settings Header */}
       <div className="pb-8 border-b border-muted-sage/30 mb-8">
-        
         <h1 className="text-3xl font-extrabold text-ink-navy mt-4 tracking-tight">
           Integration settings sheet
         </h1>
@@ -251,7 +264,8 @@ export default function Settings() {
         {status.connected ? (
           <div className="space-y-6">
             <p className="text-sm text-ink-navy leading-relaxed font-sans">
-              Recapped is authorized to read pages and write action item logs to your shared databases in Notion.
+              Recapped is authorized to read pages and write action item logs to your shared
+              databases in Notion.
             </p>
 
             <div className="flex flex-col space-y-4 p-5 border border-muted-sage/20 bg-paper-cream/60 font-mono text-xs text-ink-navy">
@@ -260,9 +274,15 @@ export default function Settings() {
                   <span className="text-[10px] text-muted-sage uppercase block">Export Target</span>
                   <span className="text-sm font-semibold mt-1 font-sans">
                     {status.databaseId ? (
-                      <>Exporting to: <Highlight>{status.databaseName || "Recapped Action Items"}</Highlight> in Notion</>
+                      <>
+                        Exporting to:{" "}
+                        <Highlight>{status.databaseName || "Recapped Action Items"}</Highlight> in
+                        Notion
+                      </>
                     ) : (
-                      <span className="text-amber-700 animate-pulse">[ Provisioning Recapped Action Items database... ]</span>
+                      <span className="text-amber-700 animate-pulse">
+                        [ Provisioning Recapped Action Items database... ]
+                      </span>
                     )}
                   </span>
                 </div>
@@ -284,22 +304,32 @@ export default function Settings() {
 
               {showPicker && (
                 <div className="pt-4 border-t border-muted-sage/10 flex flex-col space-y-2">
-                  <label className="text-[10px] text-muted-sage uppercase">Select Custom Database Target</label>
+                  <label className="text-[10px] text-muted-sage uppercase">
+                    Select Custom Database Target
+                  </label>
                   {dbLoading ? (
-                    <span className="text-muted-sage animate-pulse">Loading workspace databases...</span>
+                    <span className="text-muted-sage animate-pulse">
+                      Loading workspace databases...
+                    </span>
                   ) : databases.length > 0 ? (
                     <select
                       value={status.databaseId || ""}
                       onChange={handleSelectDatabase}
                       className="bg-transparent border border-muted-sage/30 text-ink-navy px-3 py-2 outline-none cursor-pointer focus:border-ink-navy font-sans text-sm max-w-md"
                     >
-                      <option value="" disabled>— Select Workspace Database —</option>
+                      <option value="" disabled>
+                        — Select Workspace Database —
+                      </option>
                       {databases.map((db) => (
-                        <option key={db.id} value={db.id}>{db.title}</option>
+                        <option key={db.id} value={db.id}>
+                          {db.title}
+                        </option>
                       ))}
                     </select>
                   ) : (
-                    <span className="text-red-700 font-sans text-xs">No databases found. Share another database with the integration.</span>
+                    <span className="text-red-700 font-sans text-xs">
+                      No databases found. Share another database with the integration.
+                    </span>
                   )}
                 </div>
               )}
@@ -318,7 +348,8 @@ export default function Settings() {
         ) : (
           <div className="space-y-6">
             <p className="text-sm text-muted-sage leading-relaxed font-sans">
-              Connect your Notion workspace to dynamically export extracted meeting minutes, action items, owner assignments, and deadlines as structured pages.
+              Connect your Notion workspace to dynamically export extracted meeting minutes, action
+              items, owner assignments, and deadlines as structured pages.
             </p>
             <div className="pt-4 flex flex-col space-y-4">
               <div>
@@ -332,17 +363,25 @@ export default function Settings() {
               </div>
 
               <div className="border border-dashed border-muted-sage/40 bg-paper-cream/30 p-5 font-mono text-xs text-muted-sage space-y-2 max-w-xl">
-                <span className="font-bold text-ink-navy uppercase block">Setup Instructions Guide</span>
+                <span className="font-bold text-ink-navy uppercase block">
+                  Setup Instructions Guide
+                </span>
                 <p className="leading-relaxed font-sans text-xs">
                   When the Notion authorization consent page loads:
                 </p>
                 <ol className="list-decimal list-inside space-y-1 pl-1 font-sans text-xs">
                   <li>Select the workspace you want to connect.</li>
-                  <li>Click <strong>Select Pages</strong> and select at least one parent page to share.<br /> (Create a new page in Notion) </li>
+                  <li>
+                    Click <strong>Select Pages</strong> and select at least one parent page to
+                    share.
+                    <br /> (Create a new page in Notion){" "}
+                  </li>
                   <li>Grant permissions to finish the connection.</li>
                 </ol>
                 <p className="leading-relaxed font-sans text-xs pt-1 border-t border-muted-sage/10">
-                  Recapped will automatically create a database named <strong>&quot;Recapped Action Items&quot;</strong> under the shared page so that page exports work instantly without manual configuration.
+                  Recapped will automatically create a database named{" "}
+                  <strong>&quot;Recapped Action Items&quot;</strong> under the shared page so that
+                  page exports work instantly without manual configuration.
                 </p>
               </div>
             </div>
@@ -373,18 +412,29 @@ export default function Settings() {
         {slackStatus.connected ? (
           <div className="space-y-6">
             <p className="text-sm text-ink-navy leading-relaxed font-sans">
-              Recapped is authorized to post meeting recaps and action item summaries to your Slack workspace ({slackStatus.teamName || "Slack Team"}).
+              Recapped is authorized to post meeting recaps and action item summaries to your Slack
+              workspace ({slackStatus.teamName || "Slack Team"}).
             </p>
 
             <div className="flex flex-col space-y-4 p-5 border border-muted-sage/20 bg-paper-cream/60 font-mono text-xs text-ink-navy">
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="text-[10px] text-muted-sage uppercase block">Recap Post Target</span>
+                  <span className="text-[10px] text-muted-sage uppercase block">
+                    Recap Post Target
+                  </span>
                   <span className="text-sm font-semibold mt-1 font-sans">
                     {slackStatus.defaultChannelId ? (
-                      <>Posting automatically to: <Highlight>{slackStatus.defaultChannelName || slackStatus.defaultChannelId}</Highlight> in Slack</>
+                      <>
+                        Posting automatically to:{" "}
+                        <Highlight>
+                          {slackStatus.defaultChannelName || slackStatus.defaultChannelId}
+                        </Highlight>{" "}
+                        in Slack
+                      </>
                     ) : (
-                      <span className="text-amber-700 animate-pulse">[ Set a default Slack channel to post recaps... ]</span>
+                      <span className="text-amber-700 animate-pulse">
+                        [ Set a default Slack channel to post recaps... ]
+                      </span>
                     )}
                   </span>
                 </div>
@@ -404,22 +454,32 @@ export default function Settings() {
 
               {showSlackPicker && (
                 <div className="pt-4 border-t border-muted-sage/10 flex flex-col space-y-2">
-                  <label className="text-[10px] text-muted-sage uppercase">Select Default Slack Channel</label>
+                  <label className="text-[10px] text-muted-sage uppercase">
+                    Select Default Slack Channel
+                  </label>
                   {slackChannelsLoading ? (
-                    <span className="text-muted-sage animate-pulse">Loading workspace channels...</span>
+                    <span className="text-muted-sage animate-pulse">
+                      Loading workspace channels...
+                    </span>
                   ) : slackChannels.length > 0 ? (
                     <select
                       value={slackStatus.defaultChannelId || ""}
                       onChange={handleSelectSlackChannel}
                       className="bg-transparent border border-muted-sage/30 text-ink-navy px-3 py-2 outline-none cursor-pointer focus:border-ink-navy font-sans text-sm max-w-md"
                     >
-                      <option value="" disabled>— Select Workspace Channel —</option>
+                      <option value="" disabled>
+                        — Select Workspace Channel —
+                      </option>
                       {slackChannels.map((ch) => (
-                        <option key={ch.id} value={ch.id}>{ch.name}</option>
+                        <option key={ch.id} value={ch.id}>
+                          {ch.name}
+                        </option>
                       ))}
                     </select>
                   ) : (
-                    <span className="text-red-700 font-sans text-xs">No channels found. Ensure the Slack bot is invited to your channels.</span>
+                    <span className="text-red-700 font-sans text-xs">
+                      No channels found. Ensure the Slack bot is invited to your channels.
+                    </span>
                   )}
                 </div>
               )}
@@ -438,7 +498,8 @@ export default function Settings() {
         ) : (
           <div className="space-y-6">
             <p className="text-sm text-muted-sage leading-relaxed font-sans">
-              Connect your Slack workspace to automatically publish formatted block recaps and assignable action item lists directly into a default Slack channel.
+              Connect your Slack workspace to automatically publish formatted block recaps and
+              assignable action item lists directly into a default Slack channel.
             </p>
             <div className="pt-4 flex flex-col space-y-4">
               <div>
@@ -452,17 +513,22 @@ export default function Settings() {
               </div>
 
               <div className="border border-dashed border-muted-sage/40 bg-paper-cream/30 p-5 font-mono text-xs text-muted-sage space-y-2 max-w-xl">
-                <span className="font-bold text-ink-navy uppercase block">Setup Instructions Guide</span>
+                <span className="font-bold text-ink-navy uppercase block">
+                  Setup Instructions Guide
+                </span>
                 <p className="leading-relaxed font-sans text-xs">
                   When the Slack authorization page loads:
                 </p>
                 <ol className="list-decimal list-inside space-y-1 pl-1 font-sans text-xs">
                   <li>Choose the target Slack workspace in the top right.</li>
                   <li>Review permissions request (`chat:write` and `channels:read`).</li>
-                  <li>Click <strong>Allow</strong> to grant authorization and complete connection.</li>
+                  <li>
+                    Click <strong>Allow</strong> to grant authorization and complete connection.
+                  </li>
                 </ol>
                 <p className="leading-relaxed font-sans text-xs pt-1 border-t border-muted-sage/10">
-                  Once connected, select a default channel from the target channel dropdown menu to begin automated recap publishing.
+                  Once connected, select a default channel from the target channel dropdown menu to
+                  begin automated recap publishing.
                 </p>
               </div>
             </div>
@@ -471,7 +537,10 @@ export default function Settings() {
       </div>
 
       <div className="mt-8">
-        <Link to="/dashboard" className="text-ink-navy font-bold underline hover:text-muted-sage text-sm font-mono">
+        <Link
+          to="/dashboard"
+          className="text-ink-navy font-bold underline hover:text-muted-sage text-sm font-mono"
+        >
           &larr; Return to Home
         </Link>
       </div>

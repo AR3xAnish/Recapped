@@ -14,7 +14,7 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
-    
+
     if (!email || !password) {
       setError("Please fill in all fields.");
       return;
@@ -26,9 +26,7 @@ export default function Login() {
       login(response.data.token, response.data.user);
       navigate("/");
     } catch (err) {
-      setError(
-        err.response?.data?.error || "Connection to authorization server failed."
-      );
+      setError(err.response?.data?.error || "Connection to authorization server failed.");
     } finally {
       setSubmitting(false);
     }
@@ -39,9 +37,7 @@ export default function Login() {
       <div className="border border-muted-sage/30 bg-paper-cream/40 p-8 shadow-sm">
         <div className="border-b border-muted-sage/30 pb-4 mb-6">
           <span className="text-xs font-mono text-muted-sage block">REGISTRY ENTRY // AUTH</span>
-          <h1 className="text-2xl font-bold tracking-tight text-ink-navy mt-1">
-            Access Ledger
-          </h1>
+          <h1 className="text-2xl font-bold tracking-tight text-ink-navy mt-1">Access Ledger</h1>
         </div>
 
         {error && (

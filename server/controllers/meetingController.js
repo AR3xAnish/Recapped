@@ -57,16 +57,16 @@ exports.createMeeting = async (req, res) => {
 
       if (ext === ".mp3" || ext === ".m4a" || ext === ".wav") {
         source = "audio";
-        console.log(`[Agent] Beginning single-step transcription for audio file: ${file.originalname}`);
+        console.log(
+          `[Agent] Beginning single-step transcription for audio file: ${file.originalname}`
+        );
         try {
-          rawTranscript = await transcribeAudio(
-            file.buffer,
-            file.originalname,
-            file.mimetype
-          );
+          rawTranscript = await transcribeAudio(file.buffer, file.originalname, file.mimetype);
         } catch (transcribeError) {
           console.error("[Agent] Single-step transcription failed:", transcribeError);
-          return res.status(500).json({ error: "Transcription failed: " + transcribeError.message });
+          return res
+            .status(500)
+            .json({ error: "Transcription failed: " + transcribeError.message });
         }
       } else if (ext === ".txt") {
         source = "upload";
@@ -80,8 +80,7 @@ exports.createMeeting = async (req, res) => {
         rawTranscript = await parsePdfBuffer(file.buffer);
       } else {
         return res.status(400).json({
-          error:
-            "Unsupported file type. Only .txt, .docx, .pdf, .mp3, .m4a, and .wav are allowed.",
+          error: "Unsupported file type. Only .txt, .docx, .pdf, .mp3, .m4a, and .wav are allowed.",
         });
       }
     } else {
@@ -120,7 +119,9 @@ exports.getMeetingById = async (req, res) => {
     }
 
     if (meeting.owner.toString() !== req.user.id) {
-      return res.status(403).json({ error: "Access denied. You do not own this meeting registry entry." });
+      return res
+        .status(403)
+        .json({ error: "Access denied. You do not own this meeting registry entry." });
     }
 
     res.json(meeting);
@@ -139,11 +140,15 @@ exports.processMeeting = async (req, res) => {
     }
 
     if (meeting.owner.toString() !== req.user.id) {
-      return res.status(403).json({ error: "Access denied. You do not own this meeting registry entry." });
+      return res
+        .status(403)
+        .json({ error: "Access denied. You do not own this meeting registry entry." });
     }
 
     if (meeting.status === "processing") {
-      return res.status(400).json({ error: "This meeting registry entry is already being processed." });
+      return res
+        .status(400)
+        .json({ error: "This meeting registry entry is already being processed." });
     }
 
     meeting.status = "processing";
@@ -180,7 +185,9 @@ exports.processMeeting = async (req, res) => {
             freshMeeting.summary = summaryResult.summary;
             freshMeeting.followUpEmail = summaryResult.followUpEmail;
             await freshMeeting.save();
-            console.log(`[Agent] Meeting ${freshMeeting._id} summarization completed successfully.`);
+            console.log(
+              `[Agent] Meeting ${freshMeeting._id} summarization completed successfully.`
+            );
 
             // Trigger background Slack notification if integrated
             const { postMeetingRecap } = require("../services/slack");
@@ -221,7 +228,6 @@ exports.processMeeting = async (req, res) => {
           console.error(`[Agent] Meeting ${freshMeeting._id} analysis failed:`, error);
         }
       });
-
   } catch (error) {
     console.error("Process Meeting Error:", error);
     res.status(500).json({ error: "Failed to trigger meeting analysis." });
@@ -237,7 +243,9 @@ exports.updateMeeting = async (req, res) => {
     }
 
     if (meeting.owner.toString() !== req.user.id) {
-      return res.status(403).json({ error: "Access denied. You do not own this meeting registry entry." });
+      return res
+        .status(403)
+        .json({ error: "Access denied. You do not own this meeting registry entry." });
     }
 
     const { title, summary, followUpEmail } = req.body;
@@ -246,7 +254,8 @@ exports.updateMeeting = async (req, res) => {
     if (summary !== undefined) meeting.summary = summary;
     if (followUpEmail !== undefined) {
       meeting.followUpEmail = meeting.followUpEmail || {};
-      if (followUpEmail.subject !== undefined) meeting.followUpEmail.subject = followUpEmail.subject;
+      if (followUpEmail.subject !== undefined)
+        meeting.followUpEmail.subject = followUpEmail.subject;
       if (followUpEmail.body !== undefined) meeting.followUpEmail.body = followUpEmail.body;
     }
 
@@ -285,9 +294,7 @@ exports.getActionItems = async (req, res) => {
       flattened = flattened.filter((item) => item.status === status);
     }
     if (owner) {
-      flattened = flattened.filter(
-        (item) => item.owner.toLowerCase() === owner.toLowerCase()
-      );
+      flattened = flattened.filter((item) => item.owner.toLowerCase() === owner.toLowerCase());
     }
 
     res.json(flattened);
@@ -351,10 +358,7 @@ exports.getMeetings = async (req, res) => {
     const skip = (page - 1) * limit;
 
     const total = await Meeting.countDocuments(query);
-    const meetings = await Meeting.find(query)
-      .sort(sortOption)
-      .skip(skip)
-      .limit(limit);
+    const meetings = await Meeting.find(query).sort(sortOption).skip(skip).limit(limit);
 
     const data = meetings.map((meeting) => ({
       _id: meeting._id,
@@ -379,8 +383,6 @@ exports.getMeetings = async (req, res) => {
     res.status(500).json({ error: "Failed to fetch meeting history logs." });
   }
 };
-
-
 
 const runNotionExport = async (
   userId,
@@ -408,7 +410,9 @@ const runNotionExport = async (
   });
 
   if (response.status === 401) {
-    console.warn(`[Notion Export] Revoked token detected for user ${userId}. Deleting integration.`);
+    console.warn(
+      `[Notion Export] Revoked token detected for user ${userId}. Deleting integration.`
+    );
     await Integration.findOneAndDelete({ userId, provider: "notion" });
     const err = new Error("Notion authentication has expired or been revoked.");
     err.code = "NOTION_UNAUTHORIZED";
@@ -438,9 +442,7 @@ const runNotionExport = async (
         true
       );
     } else {
-      throw new Error(
-        "Target Notion database could not be reached (returned 404 on retry)."
-      );
+      throw new Error("Target Notion database could not be reached (returned 404 on retry).");
     }
   }
 
@@ -518,7 +520,9 @@ const runNotionExport = async (
   });
 
   if (pageRes.status === 401) {
-    console.warn(`[Notion Export] Revoked token detected for user ${userId}. Deleting integration.`);
+    console.warn(
+      `[Notion Export] Revoked token detected for user ${userId}. Deleting integration.`
+    );
     await Integration.findOneAndDelete({ userId, provider: "notion" });
     const err = new Error("Notion authentication has expired or been revoked.");
     err.code = "NOTION_UNAUTHORIZED";
@@ -676,7 +680,9 @@ exports.deleteMeeting = async (req, res) => {
     }
 
     if (meeting.owner.toString() !== req.user.id) {
-      return res.status(403).json({ error: "Access denied. You do not own this meeting registry entry." });
+      return res
+        .status(403)
+        .json({ error: "Access denied. You do not own this meeting registry entry." });
     }
 
     const TranscriptChunk = require("../models/TranscriptChunk");

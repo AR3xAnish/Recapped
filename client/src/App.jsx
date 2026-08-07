@@ -21,7 +21,6 @@ export function Highlight({ children }) {
   );
 }
 
-
 // Navigation Bar
 function Navigation({ isDark, setIsDark }) {
   const location = useLocation();
@@ -33,9 +32,7 @@ function Navigation({ isDark, setIsDark }) {
     <nav className="bg-paper-cream border-b border-muted-sage/20 px-6 py-4 md:px-8 md:py-6 flex flex-col md:flex-row md:items-center md:justify-between transition-colors duration-300 relative z-50">
       <div className="flex items-center justify-between w-full md:w-auto">
         <div className="flex items-center space-x-2">
-          <span className="text-2xl font-black tracking-tight text-ink-navy">
-            Recapped
-          </span>
+          <span className="text-2xl font-black tracking-tight text-ink-navy">Recapped</span>
           <span className="text-[10px] uppercase tracking-wider text-muted-sage font-mono border border-muted-sage/30 px-1.5 py-0.5">
             Ledger v1.0
           </span>
@@ -48,9 +45,19 @@ function Navigation({ isDark, setIsDark }) {
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             {isOpen ? (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
             ) : (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M4 6h16M4 12h16M4 18h16"
+              />
             )}
           </svg>
         </button>
@@ -63,7 +70,9 @@ function Navigation({ isDark, setIsDark }) {
             <Link
               to="/dashboard"
               className={`transition-colors duration-200 text-sm font-semibold tracking-wide ${
-                isActive("/dashboard") ? "text-ink-navy border-b-2 border-ink-navy pb-1" : "text-muted-sage hover:text-ink-navy"
+                isActive("/dashboard")
+                  ? "text-ink-navy border-b-2 border-ink-navy pb-1"
+                  : "text-muted-sage hover:text-ink-navy"
               }`}
             >
               Home
@@ -71,7 +80,9 @@ function Navigation({ isDark, setIsDark }) {
             <Link
               to="/meetings/new"
               className={`transition-colors duration-200 text-sm font-semibold tracking-wide ${
-                isActive("/meetings/new") ? "text-ink-navy border-b-2 border-ink-navy pb-1" : "text-muted-sage hover:text-ink-navy"
+                isActive("/meetings/new")
+                  ? "text-ink-navy border-b-2 border-ink-navy pb-1"
+                  : "text-muted-sage hover:text-ink-navy"
               }`}
             >
               New Entry
@@ -79,7 +90,9 @@ function Navigation({ isDark, setIsDark }) {
             <Link
               to="/board"
               className={`transition-colors duration-200 text-sm font-semibold tracking-wide ${
-                isActive("/board") ? "text-ink-navy border-b-2 border-ink-navy pb-1" : "text-muted-sage hover:text-ink-navy"
+                isActive("/board")
+                  ? "text-ink-navy border-b-2 border-ink-navy pb-1"
+                  : "text-muted-sage hover:text-ink-navy"
               }`}
             >
               Board
@@ -87,7 +100,9 @@ function Navigation({ isDark, setIsDark }) {
             <Link
               to="/history"
               className={`transition-colors duration-200 text-sm font-semibold tracking-wide ${
-                isActive("/history") ? "text-ink-navy border-b-2 border-ink-navy pb-1" : "text-muted-sage hover:text-ink-navy"
+                isActive("/history")
+                  ? "text-ink-navy border-b-2 border-ink-navy pb-1"
+                  : "text-muted-sage hover:text-ink-navy"
               }`}
             >
               History
@@ -95,7 +110,9 @@ function Navigation({ isDark, setIsDark }) {
             <Link
               to="/settings"
               className={`transition-colors duration-200 text-sm font-semibold tracking-wide ${
-                isActive("/settings") ? "text-ink-navy border-b-2 border-ink-navy pb-1" : "text-muted-sage hover:text-ink-navy"
+                isActive("/settings")
+                  ? "text-ink-navy border-b-2 border-ink-navy pb-1"
+                  : "text-muted-sage hover:text-ink-navy"
               }`}
             >
               Settings
@@ -103,7 +120,9 @@ function Navigation({ isDark, setIsDark }) {
             <Link
               to="/about"
               className={`transition-colors duration-200 text-sm font-semibold tracking-wide ${
-                isActive("/about") ? "text-ink-navy border-b-2 border-ink-navy pb-1" : "text-muted-sage hover:text-ink-navy"
+                isActive("/about")
+                  ? "text-ink-navy border-b-2 border-ink-navy pb-1"
+                  : "text-muted-sage hover:text-ink-navy"
               }`}
             >
               About Ledger
@@ -264,7 +283,8 @@ function Dashboard() {
           Welcome, {user?.name}
         </h1>
         <p className="text-muted-sage mt-2 text-base max-w-xl font-normal leading-relaxed">
-          Recapped is your digitized meeting ledger. Capture transcript logs, analyze commitments, and manage action items.
+          Recapped is your digitized meeting ledger. Capture transcript logs, analyze commitments,
+          and manage action items.
         </p>
       </div>
 
@@ -278,15 +298,19 @@ function Dashboard() {
             to="/meetings/new"
             className="border border-ink-navy text-ink-navy p-6 hover:bg-ink-navy hover:text-paper-cream transition-colors duration-150 text-center cursor-pointer"
           >
-            <span className="block font-mono text-xs uppercase tracking-wider text-muted-sage mb-2">Command 01</span>
+            <span className="block font-mono text-xs uppercase tracking-wider text-muted-sage mb-2">
+              Command 01
+            </span>
             <span className="text-base font-bold">[ Record New Entry ]</span>
           </Link>
-          
+
           <Link
             to="/board"
             className="border border-ink-navy text-ink-navy p-6 hover:bg-ink-navy hover:text-paper-cream transition-colors duration-150 text-center cursor-pointer"
           >
-            <span className="block font-mono text-xs uppercase tracking-wider text-muted-sage mb-2">Command 02</span>
+            <span className="block font-mono text-xs uppercase tracking-wider text-muted-sage mb-2">
+              Command 02
+            </span>
             <span className="text-base font-bold">[ View Action Board ]</span>
           </Link>
 
@@ -294,7 +318,9 @@ function Dashboard() {
             to="/history"
             className="border border-ink-navy text-ink-navy p-6 hover:bg-ink-navy hover:text-paper-cream transition-colors duration-150 text-center cursor-pointer"
           >
-            <span className="block font-mono text-xs uppercase tracking-wider text-muted-sage mb-2">Command 03</span>
+            <span className="block font-mono text-xs uppercase tracking-wider text-muted-sage mb-2">
+              Command 03
+            </span>
             <span className="text-base font-bold">[ Browse History ]</span>
           </Link>
         </div>
@@ -326,7 +352,10 @@ function Dashboard() {
               </thead>
               <tbody className="divide-y divide-muted-sage/10 text-ink-navy">
                 {recentMeetings.map((meeting) => (
-                  <tr key={meeting._id} className="hover:bg-ink-navy/5 transition-colors duration-150">
+                  <tr
+                    key={meeting._id}
+                    className="hover:bg-ink-navy/5 transition-colors duration-150"
+                  >
                     <td className="py-3 pr-4 font-sans text-sm font-semibold">
                       <Link to={`/meetings/${meeting._id}`} className="hover:underline">
                         {meeting.title}
@@ -355,7 +384,7 @@ function Dashboard() {
         <h2 className="text-xs font-mono uppercase tracking-wider text-muted-sage mb-8">
           Connected Workspaces
         </h2>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Notion Card */}
           <div className="border border-muted-sage/30 p-6 bg-paper-cream/40 flex flex-col justify-between space-y-4">
@@ -368,21 +397,24 @@ function Dashboard() {
                 Sync Action Items to Notion Databases
               </h3>
               <p className="text-sm text-muted-sage mt-2 leading-relaxed font-sans">
-                Connect your workspace to push meeting commitments directly into your team databases.
+                Connect your workspace to push meeting commitments directly into your team
+                databases.
               </p>
               <ul className="mt-4 space-y-2 text-xs font-mono text-ink-navy">
                 <li className="flex items-center">
-                  <span className="text-highlighter-gold mr-2">▶</span> 1. Click &quot;Connect Notion&quot; in Settings
+                  <span className="text-highlighter-gold mr-2">▶</span> 1. Click &quot;Connect
+                  Notion&quot; in Settings
                 </li>
                 <li className="flex items-center">
-                  <span className="text-highlighter-gold mr-2">▶</span> 2. Choose pages to share with Recapped
+                  <span className="text-highlighter-gold mr-2">▶</span> 2. Choose pages to share
+                  with Recapped
                 </li>
                 <li className="flex items-center">
-                  <span className="text-highlighter-gold mr-2">▶</span> 3. Click &quot;Export&quot; on any action item
+                  <span className="text-highlighter-gold mr-2">▶</span> 3. Click &quot;Export&quot;
+                  on any action item
                 </li>
               </ul>
             </div>
-            
           </div>
 
           {/* Slack Card */}
@@ -392,25 +424,26 @@ function Dashboard() {
                 <span>CHAT CLIENT CONNECTION</span>
                 <span>SLACK</span>
               </div>
-              <h3 className="text-base font-bold text-ink-navy">
-                Stream Recaps to Slack Channels
-              </h3>
+              <h3 className="text-base font-bold text-ink-navy">Stream Recaps to Slack Channels</h3>
               <p className="text-sm text-muted-sage mt-2 leading-relaxed font-sans">
-                Send automated action item summaries and follow-ups straight to your communication channels.
+                Send automated action item summaries and follow-ups straight to your communication
+                channels.
               </p>
               <ul className="mt-4 space-y-2 text-xs font-mono text-ink-navy">
                 <li className="flex items-center">
-                  <span className="text-highlighter-gold mr-2">▶</span> 1. Click &quot;Connect Slack&quot; in Settings
+                  <span className="text-highlighter-gold mr-2">▶</span> 1. Click &quot;Connect
+                  Slack&quot; in Settings
                 </li>
                 <li className="flex items-center">
-                  <span className="text-highlighter-gold mr-2">▶</span> 2. Pick your default target channel
+                  <span className="text-highlighter-gold mr-2">▶</span> 2. Pick your default target
+                  channel
                 </li>
                 <li className="flex items-center">
-                  <span className="text-highlighter-gold mr-2">▶</span> 3. Recaps post automatically on process
+                  <span className="text-highlighter-gold mr-2">▶</span> 3. Recaps post automatically
+                  on process
                 </li>
               </ul>
             </div>
-            
           </div>
         </div>
       </div>
@@ -424,7 +457,6 @@ function About() {
     <div className="max-w-4xl mx-auto py-16 px-8">
       {/* Ledger Header */}
       <div className="pb-8 border-b border-muted-sage/30">
-        
         <h1 className="text-3xl font-extrabold text-ink-navy mt-4 tracking-tight">
           About Recapped
         </h1>
@@ -435,43 +467,61 @@ function About() {
 
       <div className="py-8 border-b border-muted-sage/30 space-y-6">
         <p className="text-ink-navy text-base leading-relaxed">
-          Recapped is a comprehensive productivity platform designed to bridge the gap between spoken discussions and team execution. By combining speech-to-text processing, natural language understanding, and automated integrations, it ensures commitments are never forgotten.
+          Recapped is a comprehensive productivity platform designed to bridge the gap between
+          spoken discussions and team execution. By combining speech-to-text processing, natural
+          language understanding, and automated integrations, it ensures commitments are never
+          forgotten.
         </p>
 
         <div className="space-y-6 pt-4">
           <div className="flex items-start">
             <span className="text-muted-sage font-mono mr-4 text-xs">FEATURE_01</span>
             <div>
-              <strong className="text-ink-navy block font-semibold text-sm">Inline Transcription & Analysis</strong>
+              <strong className="text-ink-navy block font-semibold text-sm">
+                Inline Transcription & Analysis
+              </strong>
               <span className="text-muted-sage text-sm leading-relaxed block mt-1">
-                Upload audio recordings or paste meeting transcripts to automatically extract participants, summarize key discussions, and parse action-item commitments with confidence scores.
+                Upload audio recordings or paste meeting transcripts to automatically extract
+                participants, summarize key discussions, and parse action-item commitments with
+                confidence scores.
               </span>
             </div>
           </div>
           <div className="flex items-start">
             <span className="text-muted-sage font-mono mr-4 text-xs">FEATURE_02</span>
             <div>
-              <strong className="text-ink-navy block font-semibold text-sm">Action Items Kanban Board</strong>
+              <strong className="text-ink-navy block font-semibold text-sm">
+                Action Items Kanban Board
+              </strong>
               <span className="text-muted-sage text-sm leading-relaxed block mt-1">
-                Manage, assign, and organize extracted tasks across all meetings in a unified, visual Kanban board. Drag-and-drop actions sync progress back to the database in real-time.
+                Manage, assign, and organize extracted tasks across all meetings in a unified,
+                visual Kanban board. Drag-and-drop actions sync progress back to the database in
+                real-time.
               </span>
             </div>
           </div>
           <div className="flex items-start">
             <span className="text-muted-sage font-mono mr-4 text-xs">FEATURE_03</span>
             <div>
-              <strong className="text-ink-navy block font-semibold text-sm">RAG-Powered Vector Q&A Search</strong>
+              <strong className="text-ink-navy block font-semibold text-sm">
+                RAG-Powered Vector Q&A Search
+              </strong>
               <span className="text-muted-sage text-sm leading-relaxed block mt-1">
-                Query transcript details directly. Recapped chunks and indexes transcripts to answer specific questions, find ownership targets, and retrieve meeting history details.
+                Query transcript details directly. Recapped chunks and indexes transcripts to answer
+                specific questions, find ownership targets, and retrieve meeting history details.
               </span>
             </div>
           </div>
           <div className="flex items-start">
             <span className="text-muted-sage font-mono mr-4 text-xs">FEATURE_04</span>
             <div>
-              <strong className="text-ink-navy block font-semibold text-sm">Notion & Slack Workspaces Sync</strong>
+              <strong className="text-ink-navy block font-semibold text-sm">
+                Notion & Slack Workspaces Sync
+              </strong>
               <span className="text-muted-sage text-sm leading-relaxed block mt-1">
-                Connect and sync commitments directly to your team’s workspaces. Automatically publish summarized recaps to Slack channels, and export action tasks to Notion tables.
+                Connect and sync commitments directly to your team’s workspaces. Automatically
+                publish summarized recaps to Slack channels, and export action tasks to Notion
+                tables.
               </span>
             </div>
           </div>

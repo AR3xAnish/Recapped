@@ -155,7 +155,9 @@ exports.getNotionDatabases = async (req, res) => {
     });
 
     if (response.status === 401) {
-      console.warn(`[Notion API] Revoked token detected for user ${req.user.id}. Deleting integration.`);
+      console.warn(
+        `[Notion API] Revoked token detected for user ${req.user.id}. Deleting integration.`
+      );
       await Integration.findOneAndDelete({ userId: req.user.id, provider: "notion" });
       return res.status(401).json({
         error: "Notion authentication has expired or been revoked. Please reconnect.",
@@ -165,9 +167,7 @@ exports.getNotionDatabases = async (req, res) => {
 
     if (!response.ok) {
       const errText = await response.text();
-      return res
-        .status(response.status)
-        .json({ error: `Notion Search API error: ${errText}` });
+      return res.status(response.status).json({ error: `Notion Search API error: ${errText}` });
     }
 
     const searchData = await response.json();
@@ -407,7 +407,9 @@ exports.getSlackChannels = async (req, res) => {
       console.error("[Slack API] error response:", channelData.error);
       const authErrors = ["invalid_auth", "token_revoked", "account_inactive", "token_expired"];
       if (authErrors.includes(channelData.error)) {
-        console.warn(`[Slack API] Revoked token detected for user ${req.user.id}. Deleting integration.`);
+        console.warn(
+          `[Slack API] Revoked token detected for user ${req.user.id}. Deleting integration.`
+        );
         await Integration.findOneAndDelete({ userId: req.user.id, provider: "slack" });
         return res.status(401).json({
           error: "Slack authentication has expired or been revoked. Please reconnect.",

@@ -29,10 +29,7 @@ api.interceptors.response.use(
       localStorage.removeItem("user");
 
       // Redirect to login if not already on an auth page
-      if (
-        window.location.pathname !== "/login" &&
-        window.location.pathname !== "/register"
-      ) {
+      if (window.location.pathname !== "/login" && window.location.pathname !== "/register") {
         window.location.href = "/login";
       }
     }

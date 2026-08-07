@@ -2,10 +2,10 @@
 @import "tailwindcss";
 
 @theme {
-  --color-paper-cream: #F7F4EC;
-  --color-ink-navy: #1D2939;
-  --color-muted-sage: #5B7B6D;
-  --color-highlighter-gold: #F2B705;
+  --color-paper-cream: #f7f4ec;
+  --color-ink-navy: #1d2939;
+  --color-muted-sage: #5b7b6d;
+  --color-highlighter-gold: #f2b705;
 
   --font-sans: "Inter", sans-serif;
   --font-mono: "IBM Plex Mono", monospace;
@@ -13,8 +13,8 @@
 
 .dark {
   --color-paper-cream: #121922; /* Dark carbon paper background */
-  --color-ink-navy: #F7F4EC;    /* Light ivory text */
-  --color-muted-sage: #8DA99C;  /* Brighter sage for dark mode visibility */
+  --color-ink-navy: #f7f4ec; /* Light ivory text */
+  --color-muted-sage: #8da99c; /* Brighter sage for dark mode visibility */
 }
 
 body {

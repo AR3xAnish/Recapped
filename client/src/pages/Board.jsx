@@ -34,11 +34,7 @@ function ActionItemCard({ item, notionStatus, exportState, onExport }) {
       }`}
     >
       <div className="text-sm font-semibold text-ink-navy mb-2 leading-relaxed">
-        {item.confidence === "high" ? (
-          <Highlight>{item.description}</Highlight>
-        ) : (
-          item.description
-        )}
+        {item.confidence === "high" ? <Highlight>{item.description}</Highlight> : item.description}
       </div>
 
       <div className="space-y-1.5 text-[11px] font-mono text-muted-sage">
@@ -80,7 +76,10 @@ function ActionItemCard({ item, notionStatus, exportState, onExport }) {
             ) : (
               <div className="inline-flex items-center">
                 {exportState === "success" ? (
-                  <span className="text-emerald-700 font-bold text-[10px]" title="Exported to Notion">
+                  <span
+                    className="text-emerald-700 font-bold text-[10px]"
+                    title="Exported to Notion"
+                  >
                     ✓ <span className="uppercase text-[9px] font-semibold">Saved</span>
                   </span>
                 ) : exportState === "failed" ? (
@@ -177,10 +176,7 @@ export default function Board() {
       setExportStates((prev) => ({ ...prev, [itemId]: "success" }));
     } catch (err) {
       console.error("Failed to export action item from board:", err);
-      if (
-        err.response?.status === 401 ||
-        err.response?.data?.code === "NOTION_UNAUTHORIZED"
-      ) {
+      if (err.response?.status === 401 || err.response?.data?.code === "NOTION_UNAUTHORIZED") {
         alert(
           "Notion authentication has expired or been revoked. Redirecting to Settings sheet..."
         );
@@ -218,9 +214,7 @@ export default function Board() {
     if (!targetItem || targetItem.status === newStatus) return;
 
     // Optimistic UI state update
-    setItems((prev) =>
-      prev.map((i) => (i.id === itemId ? { ...i, status: newStatus } : i))
-    );
+    setItems((prev) => prev.map((i) => (i.id === itemId ? { ...i, status: newStatus } : i)));
 
     try {
       await api.patch(`/action-items/${targetItem.meetingId}/${itemId}`, {
@@ -235,16 +229,12 @@ export default function Board() {
 
   // Get unique owners & meetings for filter bars
   const owners = ["all", ...new Set(items.map((i) => i.owner).filter(Boolean))];
-  const meetings = [
-    "all",
-    ...new Set(items.map((i) => i.meetingTitle).filter(Boolean)),
-  ];
+  const meetings = ["all", ...new Set(items.map((i) => i.meetingTitle).filter(Boolean))];
 
   // Apply filters
   const filteredItems = items.filter((item) => {
     const matchOwner =
-      selectedOwner === "all" ||
-      item.owner.toLowerCase() === selectedOwner.toLowerCase();
+      selectedOwner === "all" || item.owner.toLowerCase() === selectedOwner.toLowerCase();
     const matchMeeting =
       selectedMeeting === "all" ||
       item.meetingTitle.toLowerCase() === selectedMeeting.toLowerCase();
@@ -269,7 +259,10 @@ export default function Board() {
         <div className="bg-red-500/10 border border-red-500/20 text-red-700 p-4 text-xs font-mono mb-8">
           BOARD ERROR: {error}
         </div>
-        <Link to="/dashboard" className="text-ink-navy font-bold underline hover:text-muted-sage text-sm">
+        <Link
+          to="/dashboard"
+          className="text-ink-navy font-bold underline hover:text-muted-sage text-sm"
+        >
           &larr; Return to Ledger
         </Link>
       </div>
@@ -288,7 +281,8 @@ export default function Board() {
           Action Item commitments Board
         </h1>
         <p className="text-muted-sage mt-2 text-base max-w-xl font-normal leading-relaxed font-sans">
-          A synchronized visual board displaying extracted action items across meeting logs. Drag items to update commitments.
+          A synchronized visual board displaying extracted action items across meeting logs. Drag
+          items to update commitments.
         </p>
 
         {/* Filter controls */}

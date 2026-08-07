@@ -43,9 +43,7 @@ const MeetingSchema = new mongoose.Schema({
       },
     },
   ],
-  keyDecisions: [
-    { type: String, trim: true },
-  ],
+  keyDecisions: [{ type: String, trim: true }],
   processingError: {
     type: String,
   },

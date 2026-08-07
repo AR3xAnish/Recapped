@@ -38,9 +38,7 @@ export default function Register() {
       login(response.data.token, response.data.user);
       navigate("/");
     } catch (err) {
-      setError(
-        err.response?.data?.error || "Registration request failed."
-      );
+      setError(err.response?.data?.error || "Registration request failed.");
     } finally {
       setSubmitting(false);
     }
@@ -51,9 +49,7 @@ export default function Register() {
       <div className="border border-muted-sage/30 bg-paper-cream/40 p-8 shadow-sm">
         <div className="border-b border-muted-sage/30 pb-4 mb-6">
           <span className="text-xs font-mono text-muted-sage block">REGISTRY ENTRY // AUTH</span>
-          <h1 className="text-2xl font-bold tracking-tight text-ink-navy mt-1">
-            Register Scribe
-          </h1>
+          <h1 className="text-2xl font-bold tracking-tight text-ink-navy mt-1">Register Scribe</h1>
         </div>
 
         {error && (

@@ -53,6 +53,10 @@ test("Slack Service: postMeetingRecap payload formatting and API trigger", async
   assert.ok(sentPayload.blocks);
   assert.strictEqual(sentPayload.blocks[0].type, "header");
   assert.ok(sentPayload.blocks[0].text.text.includes("Project Alignment Sync"));
-  assert.ok(sentPayload.blocks[4].text.text.includes("Deploy database changes (Owner: Bob, Deadline: 2026-08-10)"));
+  assert.ok(
+    sentPayload.blocks[4].text.text.includes(
+      "Deploy database changes (Owner: Bob, Deadline: 2026-08-10)"
+    )
+  );
   assert.ok(sentPayload.blocks[4].text.text.includes("Verify CORS mappings (Unassigned)"));
 });

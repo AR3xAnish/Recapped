@@ -28,7 +28,8 @@ export default function Landing() {
           Turn meeting transcripts into decisions and action items — automatically
         </h1>
         <p className="text-base text-muted-sage max-w-xl mx-auto leading-relaxed">
-          A minimalist digitized meeting ledger. Paste text transcripts, parse commitments, organize Kanbans, and sync action items straight to your Notion workspace.
+          A minimalist digitized meeting ledger. Paste text transcripts, parse commitments, organize
+          Kanbans, and sync action items straight to your Notion workspace.
         </p>
         <div className="pt-4 flex justify-center items-center gap-4">
           <Link
@@ -54,8 +55,12 @@ export default function Landing() {
         </div>
         <pre className="font-mono text-sm text-ink-navy whitespace-pre-wrap leading-relaxed">
           [00:12:31] Alice: I will double-check the server deploy by Wednesday.{"\n"}
-          [00:12:45] Bob: I will test the routes. We need to <Highlight>finalize the API spec</Highlight> first.{"\n"}
-          [00:13:02] Alice: Understood. Let&apos;s <Highlight>push the production build</Highlight> after tests pass.
+          [00:12:45] Bob: I will test the routes. We need to{" "}
+          <Highlight>finalize the API spec</Highlight> first.{"\n"}
+          [00:13:02] Alice: Understood. Let&apos;s <Highlight>
+            push the production build
+          </Highlight>{" "}
+          after tests pass.
         </pre>
       </div>
 
@@ -70,7 +75,8 @@ export default function Landing() {
               1. Upload transcript
             </h3>
             <p className="text-sm text-muted-sage leading-relaxed">
-              Paste raw text logs or upload document formats directly. Whisper integration handles voice recordings.
+              Paste raw text logs or upload document formats directly. Whisper integration handles
+              voice recordings.
             </p>
           </div>
           <div className="space-y-2 md:px-4 md:border-r border-muted-sage/20 last:border-r-0">
@@ -78,7 +84,8 @@ export default function Landing() {
               2. Extract action items
             </h3>
             <p className="text-sm text-muted-sage leading-relaxed">
-              AI automatically extracts participating scribes, key decisions, and action item commitments.
+              AI automatically extracts participating scribes, key decisions, and action item
+              commitments.
             </p>
           </div>
           <div className="space-y-2 md:px-4">
@@ -86,7 +93,8 @@ export default function Landing() {
               3. Slack & Notion Sync
             </h3>
             <p className="text-sm text-muted-sage leading-relaxed">
-              Export parsed action tasks directly to Notion databases, or post recap summaries instantly to Slack channels.
+              Export parsed action tasks directly to Notion databases, or post recap summaries
+              instantly to Slack channels.
             </p>
           </div>
         </div>
@@ -97,7 +105,7 @@ export default function Landing() {
         <h2 className="text-xs font-mono uppercase tracking-wider text-muted-sage mb-8 text-center">
           Connected Workspaces
         </h2>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Notion Card */}
           <div className="border border-muted-sage/30 p-6 bg-paper-cream/40 flex flex-col justify-between space-y-4">
@@ -110,17 +118,21 @@ export default function Landing() {
                 Sync Action Items to Notion Databases
               </h3>
               <p className="text-sm text-muted-sage mt-2 leading-relaxed font-sans">
-                Connect your workspace to push meeting commitments directly into your team databases.
+                Connect your workspace to push meeting commitments directly into your team
+                databases.
               </p>
               <ul className="mt-4 space-y-2 text-xs font-mono text-ink-navy">
                 <li className="flex items-center">
-                  <span className="text-highlighter-gold mr-2">▶</span> 1. Click &quot;Connect Notion&quot; in Settings
+                  <span className="text-highlighter-gold mr-2">▶</span> 1. Click &quot;Connect
+                  Notion&quot; in Settings
                 </li>
                 <li className="flex items-center">
-                  <span className="text-highlighter-gold mr-2">▶</span> 2. Choose pages to share with Recapped
+                  <span className="text-highlighter-gold mr-2">▶</span> 2. Choose pages to share
+                  with Recapped
                 </li>
                 <li className="flex items-center">
-                  <span className="text-highlighter-gold mr-2">▶</span> 3. Click &quot;Export&quot; on any action item
+                  <span className="text-highlighter-gold mr-2">▶</span> 3. Click &quot;Export&quot;
+                  on any action item
                 </li>
               </ul>
             </div>
@@ -136,21 +148,23 @@ export default function Landing() {
                 <span>CHAT CLIENT CONNECTION</span>
                 <span>SLACK</span>
               </div>
-              <h3 className="text-base font-bold text-ink-navy">
-                Stream Recaps to Slack Channels
-              </h3>
+              <h3 className="text-base font-bold text-ink-navy">Stream Recaps to Slack Channels</h3>
               <p className="text-sm text-muted-sage mt-2 leading-relaxed font-sans">
-                Send automated action item summaries and follow-ups straight to your communication channels.
+                Send automated action item summaries and follow-ups straight to your communication
+                channels.
               </p>
               <ul className="mt-4 space-y-2 text-xs font-mono text-ink-navy">
                 <li className="flex items-center">
-                  <span className="text-highlighter-gold mr-2">▶</span> 1. Click &quot;Connect Slack&quot; in Settings
+                  <span className="text-highlighter-gold mr-2">▶</span> 1. Click &quot;Connect
+                  Slack&quot; in Settings
                 </li>
                 <li className="flex items-center">
-                  <span className="text-highlighter-gold mr-2">▶</span> 2. Pick your default target channel
+                  <span className="text-highlighter-gold mr-2">▶</span> 2. Pick your default target
+                  channel
                 </li>
                 <li className="flex items-center">
-                  <span className="text-highlighter-gold mr-2">▶</span> 3. Recaps post automatically on process
+                  <span className="text-highlighter-gold mr-2">▶</span> 3. Recaps post automatically
+                  on process
                 </li>
               </ul>
             </div>

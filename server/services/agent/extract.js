@@ -5,23 +5,41 @@ const { z } = require("zod");
 
 // Zod Schema to validate model outputs
 const ExtractionSchema = z.object({
-  participants: z.array(
-    z.object({
-      name: z.string().describe("The name of the participant. E.g. 'Alice Smith'"),
-      role: z.string().optional().default("").describe("The role or department of this participant, if mentioned"),
-    })
-  ).default([]),
-  actionItems: z.array(
-    z.object({
-      description: z.string().describe("Clear and actionable description of the task or commitment"),
-      owner: z.string().describe("The name of the participant responsible for this action item, or 'Unassigned'"),
-      deadline: z.string().optional().default("").describe("The deadline, date, or relative time if mentioned"),
-      confidence: z.enum(["high", "medium", "low"]).describe("Extraction confidence level based on commitment explicitness"),
-    })
-  ).default([]),
-  keyDecisions: z.array(
-    z.string().describe("A key decision made during the meeting")
-  ).default([]),
+  participants: z
+    .array(
+      z.object({
+        name: z.string().describe("The name of the participant. E.g. 'Alice Smith'"),
+        role: z
+          .string()
+          .optional()
+          .default("")
+          .describe("The role or department of this participant, if mentioned"),
+      })
+    )
+    .default([]),
+  actionItems: z
+    .array(
+      z.object({
+        description: z
+          .string()
+          .describe("Clear and actionable description of the task or commitment"),
+        owner: z
+          .string()
+          .describe(
+            "The name of the participant responsible for this action item, or 'Unassigned'"
+          ),
+        deadline: z
+          .string()
+          .optional()
+          .default("")
+          .describe("The deadline, date, or relative time if mentioned"),
+        confidence: z
+          .enum(["high", "medium", "low"])
+          .describe("Extraction confidence level based on commitment explicitness"),
+      })
+    )
+    .default([]),
+  keyDecisions: z.array(z.string().describe("A key decision made during the meeting")).default([]),
 });
 
 const schemaInstructions = `
@@ -64,8 +82,14 @@ const repairJsonSyntax = async (originalText, parseError, retryCount) => {
   });
 
   const prompt = ChatPromptTemplate.fromMessages([
-    ["system", "You are an expert AI meeting scribe. The JSON you returned previously is syntactically invalid (malformed). You must fix it. Output ONLY raw, valid JSON matching the schema, no markdown wrappers, no backticks, no conversational text.\n{schema_instructions}"],
-    ["human", "Original Transcript:\n{text}\n\nParsing Error:\n{error}\n\nPlease generate valid, syntactically correct JSON."]
+    [
+      "system",
+      "You are an expert AI meeting scribe. The JSON you returned previously is syntactically invalid (malformed). You must fix it. Output ONLY raw, valid JSON matching the schema, no markdown wrappers, no backticks, no conversational text.\n{schema_instructions}",
+    ],
+    [
+      "human",
+      "Original Transcript:\n{text}\n\nParsing Error:\n{error}\n\nPlease generate valid, syntactically correct JSON.",
+    ],
   ]);
 
   const chain = prompt.pipe(model).pipe(new JsonOutputParser());
@@ -74,7 +98,7 @@ const repairJsonSyntax = async (originalText, parseError, retryCount) => {
     const rawResult = await chain.invoke({
       text: originalText,
       error: parseError.message,
-      schema_instructions: schemaInstructions
+      schema_instructions: schemaInstructions,
     });
     return ExtractionSchema.parse(rawResult);
   } catch (err) {
@@ -98,8 +122,14 @@ const repairZodValidation = async (originalText, invalidJson, zodError, retryCou
   });
 
   const prompt = ChatPromptTemplate.fromMessages([
-    ["system", "You are an expert AI meeting scribe. The JSON you generated previously contains schema validation errors. You must correct the errors. Output ONLY the raw corrected JSON matching the schema, no markdown wrappers, no backticks, no conversational text.\n{schema_instructions}"],
-    ["human", "Original Transcript:\n{text}\n\nInvalid JSON:\n{invalid_json}\n\nValidation Errors:\n{error}\n\nPlease correct the JSON output."]
+    [
+      "system",
+      "You are an expert AI meeting scribe. The JSON you generated previously contains schema validation errors. You must correct the errors. Output ONLY the raw corrected JSON matching the schema, no markdown wrappers, no backticks, no conversational text.\n{schema_instructions}",
+    ],
+    [
+      "human",
+      "Original Transcript:\n{text}\n\nInvalid JSON:\n{invalid_json}\n\nValidation Errors:\n{error}\n\nPlease correct the JSON output.",
+    ],
   ]);
 
   const chain = prompt.pipe(model).pipe(new JsonOutputParser());
@@ -109,7 +139,7 @@ const repairZodValidation = async (originalText, invalidJson, zodError, retryCou
       text: originalText,
       invalid_json: JSON.stringify(invalidJson, null, 2),
       error: zodError.message,
-      schema_instructions: schemaInstructions
+      schema_instructions: schemaInstructions,
     });
     return ExtractionSchema.parse(rawResult);
   } catch (err) {
@@ -137,8 +167,11 @@ const extractFromChunk = async (text, retryCount = 0) => {
   });
 
   const prompt = ChatPromptTemplate.fromMessages([
-    ["system", "You are an expert AI meeting scribe. Your job is to analyze the meeting transcript and extract structured information. You must strictly follow these formatting guidelines:\n{schema_instructions}"],
-    ["human", "Meeting Transcript:\n{text}"]
+    [
+      "system",
+      "You are an expert AI meeting scribe. Your job is to analyze the meeting transcript and extract structured information. You must strictly follow these formatting guidelines:\n{schema_instructions}",
+    ],
+    ["human", "Meeting Transcript:\n{text}"],
   ]);
 
   const chain = prompt.pipe(model).pipe(new JsonOutputParser());

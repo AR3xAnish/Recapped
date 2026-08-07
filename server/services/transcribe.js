@@ -102,7 +102,7 @@ async function transcribeSegment(segmentBuffer, filename, mimeType) {
   const response = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", {
     method: "POST",
     headers: {
-      "Authorization": `Bearer ${apiKey}`,
+      Authorization: `Bearer ${apiKey}`,
     },
     body: formData,
   });
@@ -124,7 +124,9 @@ async function transcribeAudio(fileBuffer, filename, mimeType) {
     return await transcribeSegment(fileBuffer, filename, mimeType);
   }
 
-  console.log(`[Transcribe] File size ${fileBuffer.length} exceeds 20MB limit. Splitting into chunks...`);
+  console.log(
+    `[Transcribe] File size ${fileBuffer.length} exceeds 20MB limit. Splitting into chunks...`
+  );
   const segments = chunkAudio(fileBuffer, filename, MAX_SIZE);
   console.log(`[Transcribe] Split into ${segments.length} segment(s). Transcribing in sequence...`);
 

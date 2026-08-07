@@ -16,22 +16,22 @@ const upload = multer({
     if (extname) {
       return cb(null, true);
     }
-    cb(
-      new Error(
-        "File upload only supports .txt, .docx, .pdf, .mp3, .m4a, and .wav files."
-      )
-    );
+    cb(new Error("File upload only supports .txt, .docx, .pdf, .mp3, .m4a, and .wav files."));
   },
 });
 
-router.post("/", (req, res, next) => {
-  upload.single("file")(req, res, (err) => {
-    if (err) {
-      return res.status(400).json({ error: err.message });
-    }
-    next();
-  });
-}, meetingController.createMeeting);
+router.post(
+  "/",
+  (req, res, next) => {
+    upload.single("file")(req, res, (err) => {
+      if (err) {
+        return res.status(400).json({ error: err.message });
+      }
+      next();
+    });
+  },
+  meetingController.createMeeting
+);
 
 router.get("/", meetingController.getMeetings);
 router.get("/:id", meetingController.getMeetingById);

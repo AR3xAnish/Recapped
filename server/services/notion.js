@@ -15,7 +15,9 @@ async function resolveExportDatabase(userId) {
   const accessToken = decrypt(integration.accessToken);
 
   // 2. If no databaseId is saved, check if an accessible database already exists
-  console.log(`[Notion resolveExportDatabase] Searching for existing database for user ${userId}...`);
+  console.log(
+    `[Notion resolveExportDatabase] Searching for existing database for user ${userId}...`
+  );
   const searchResponse = await fetch("https://api.notion.com/v1/search", {
     method: "POST",
     headers: {
@@ -47,9 +49,7 @@ async function resolveExportDatabase(userId) {
 
   const searchData = await searchResponse.json();
   const existingDb = (searchData.results || []).find(
-    (item) =>
-      item.object === "database" &&
-      item.title?.[0]?.plain_text === "Recapped Action Items"
+    (item) => item.object === "database" && item.title?.[0]?.plain_text === "Recapped Action Items"
   );
 
   if (existingDb) {
@@ -91,7 +91,9 @@ async function resolveExportDatabase(userId) {
     );
   }
 
-  console.log(`[Notion resolveExportDatabase] Creating database under parent page: ${parentPage.id}`);
+  console.log(
+    `[Notion resolveExportDatabase] Creating database under parent page: ${parentPage.id}`
+  );
 
   // Create database via POST /v1/databases
   const dbResponse = await fetch("https://api.notion.com/v1/databases", {

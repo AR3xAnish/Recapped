@@ -1,12 +1,30 @@
+/**
+ * @file rag.js
+ * @description Retrieval-Augmented Generation (RAG) service. Handles dynamic importing of
+ * transformers, generating sentence embeddings, indexing transcript text chunks inside MongoDB
+ * with vector layouts, and query answering via Groq Llama models.
+ */
+
 const mongoose = require("mongoose");
 const Meeting = require("../models/Meeting");
 const TranscriptChunk = require("../models/TranscriptChunk");
 const { RecursiveCharacterTextSplitter } = require("@langchain/textsplitters");
 const { ChatGroq } = require("@langchain/groq");
 const { ChatPromptTemplate } = require("@langchain/core/prompts");
+
+// Module-level cached variables to persist model loading state
 let pipelineFn = null;
 let extractor = null;
 
+/**
+ * Lazy loads and caches the Xenova sentence embedding feature extractor
+ * to prevent reload overheads across multiple calls.
+ * Uses dynamic import() to load ESM @xenova/transformers package.
+ *
+ * @async
+ * @function getExtractor
+ * @returns {Promise<Function>} The loaded pipeline feature extraction model callback.
+ */
 async function getExtractor() {
   if (!extractor) {
     if (!pipelineFn) {
@@ -21,6 +39,15 @@ async function getExtractor() {
   return extractor;
 }
 
+/**
+ * Generates a normalized mean pooling sentence vector embedding (384 dimensions)
+ * for a given text excerpt.
+ *
+ * @async
+ * @function getEmbedding
+ * @param {string} text - The input text string to generate embeddings for.
+ * @returns {Promise<Array<number>>} The generated vector array.
+ */
 async function getEmbedding(text) {
   const model = await getExtractor();
   const output = await model(text, {
@@ -30,6 +57,17 @@ async function getEmbedding(text) {
   return Array.from(output.data);
 }
 
+/**
+ * Splices raw transcript logs into smaller overlapping text chunks, generates
+ * vectors for each chunk, and bulk inserts them into the MongoDB collection.
+ * Cleans up old chunks first to prevent data duplication.
+ *
+ * @async
+ * @function indexMeeting
+ * @param {string} meetingId - The ID of the meeting document.
+ * @param {string} rawTranscript - The full transcript content.
+ * @returns {Promise<boolean>} True if indexing succeeded; false if transcript is empty.
+ */
 async function indexMeeting(meetingId, rawTranscript) {
   if (!rawTranscript || rawTranscript.trim() === "") {
     console.warn(`[RAG] No transcript to index for meeting ${meetingId}.`);
@@ -66,12 +104,22 @@ async function indexMeeting(meetingId, rawTranscript) {
     await TranscriptChunk.insertMany(insertDocs);
   }
 
-  // 4. Update chunked flag in Meeting document
+  // 4. Update chunked flag in Meeting document to mark RAG search readiness
   await Meeting.findByIdAndUpdate(meetingId, { chunked: true });
   console.log(`[RAG] Indexing completed successfully for meeting ${meetingId}.`);
   return true;
 }
 
+/**
+ * Searches indexed vector chunks matching a question's semantic intent,
+ * and calls the Groq LLM chain using prompt contexts to generate answers.
+ *
+ * @async
+ * @function askMeetingQuestion
+ * @param {string} meetingId - The target meeting database ID.
+ * @param {string} question - The user question query.
+ * @returns {Promise<Object>} Object containing the LLM response answer and source text chunks.
+ */
 async function askMeetingQuestion(meetingId, question) {
   if (!process.env.GROQ_API_KEY) {
     throw new Error("GROQ_API_KEY environment variable is not configured on the server.");
@@ -125,7 +173,7 @@ async function askMeetingQuestion(meetingId, question) {
   const prompt = ChatPromptTemplate.fromMessages([
     [
       "system",
-      "You are an expert meeting assistant. You are answering a question about a meeting. You must answer the question based ONLY on the provided excerpts from the meeting transcript. Do not use any outside knowledge. If the excerpts do not contain enough information to support an answer, respond with exactly: \"I don't see that mentioned in this meeting.\"\n\nExcerpts:\n{context}",
+      'You are an expert meeting assistant. You are answering a question about a meeting. You must answer the question based ONLY on the provided excerpts from the meeting transcript. Do not use any outside knowledge. If the excerpts do not contain enough information to support an answer, respond with exactly: "I don\'t see that mentioned in this meeting."\n\nExcerpts:\n{context}',
     ],
     ["human", "{question}"],
   ]);

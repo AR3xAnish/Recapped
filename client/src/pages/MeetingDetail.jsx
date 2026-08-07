@@ -30,17 +30,20 @@ export default function MeetingDetail() {
   const [qaError, setQaError] = useState(null);
   const [indexRetrying, setIndexRetrying] = useState(false);
 
-  const fetchMeeting = useCallback(async (showLoading = false) => {
-    if (showLoading) setLoading(true);
-    try {
-      const response = await api.get(`/meetings/${id}`);
-      setMeeting(response.data);
-    } catch (err) {
-      setError(err.response?.data?.error || "Failed to fetch meeting registry entry.");
-    } finally {
-      if (showLoading) setLoading(false);
-    }
-  }, [id]);
+  const fetchMeeting = useCallback(
+    async (showLoading = false) => {
+      if (showLoading) setLoading(true);
+      try {
+        const response = await api.get(`/meetings/${id}`);
+        setMeeting(response.data);
+      } catch (err) {
+        setError(err.response?.data?.error || "Failed to fetch meeting registry entry.");
+      } finally {
+        if (showLoading) setLoading(false);
+      }
+    },
+    [id]
+  );
 
   useEffect(() => {
     fetchMeeting(true);
@@ -65,10 +68,7 @@ export default function MeetingDetail() {
       setExportStates((prev) => ({ ...prev, [itemId]: "success" }));
     } catch (err) {
       console.error("Failed to export action item:", err);
-      if (
-        err.response?.status === 401 ||
-        err.response?.data?.code === "NOTION_UNAUTHORIZED"
-      ) {
+      if (err.response?.status === 401 || err.response?.data?.code === "NOTION_UNAUTHORIZED") {
         alert(
           "Notion authentication has expired or been revoked. Redirecting to Settings sheet..."
         );
@@ -90,10 +90,7 @@ export default function MeetingDetail() {
       setExportStates((prev) => ({ ...prev, ...newStates }));
     } catch (err) {
       console.error("Failed to export all action items:", err);
-      if (
-        err.response?.status === 401 ||
-        err.response?.data?.code === "NOTION_UNAUTHORIZED"
-      ) {
+      if (err.response?.status === 401 || err.response?.data?.code === "NOTION_UNAUTHORIZED") {
         alert(
           "Notion authentication has expired or been revoked. Redirecting to Settings sheet..."
         );
@@ -218,11 +215,7 @@ export default function MeetingDetail() {
 
     try {
       const res = await api.post(`/meetings/${id}/ask`, { question: q });
-      setQaTurns((prev) =>
-        prev.map((turn) =>
-          turn._id === optimisticTurn._id ? res.data : turn
-        )
-      );
+      setQaTurns((prev) => prev.map((turn) => (turn._id === optimisticTurn._id ? res.data : turn)));
     } catch (err) {
       console.error("Failed to ask question:", err);
       const errMsg = err.response?.data?.error || "Failed to get an answer.";
@@ -263,7 +256,10 @@ export default function MeetingDetail() {
         <div className="bg-red-500/10 border border-red-500/20 text-red-700 p-4 text-xs font-mono mb-8">
           ENTRY ERROR: {error}
         </div>
-        <Link to="/dashboard" className="text-ink-navy font-bold underline hover:text-muted-sage text-sm">
+        <Link
+          to="/dashboard"
+          className="text-ink-navy font-bold underline hover:text-muted-sage text-sm"
+        >
           &larr; Return to Ledger
         </Link>
       </div>
@@ -278,12 +274,10 @@ export default function MeetingDetail() {
           <span>ENTRY ID: REG_{meeting._id}</span>
           <span>DATE RECORDED: {new Date(meeting.createdAt).toLocaleString()}</span>
         </div>
-        
+
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <h1 className="text-3xl font-extrabold text-ink-navy tracking-tight">
-            {meeting.title}
-          </h1>
-          
+          <h1 className="text-3xl font-extrabold text-ink-navy tracking-tight">{meeting.title}</h1>
+
           <div className="flex items-center space-x-3">
             {(meeting.status === "uploaded" || meeting.status === "failed") && (
               <button
@@ -302,7 +296,7 @@ export default function MeetingDetail() {
             )}
           </div>
         </div>
-        
+
         <div className="flex flex-wrap gap-4 mt-6 text-xs font-mono text-muted-sage">
           <div className="border border-muted-sage/30 px-2.5 py-1">
             SOURCE: <span className="text-ink-navy font-bold uppercase">{meeting.source}</span>
@@ -322,7 +316,6 @@ export default function MeetingDetail() {
       {/* Grid of Results (if processed) */}
       {meeting.status === "processed" && (
         <div className="space-y-12 mb-12">
-          
           {/* Executive Summary */}
           {meeting.summary && (
             <div className="pb-8 border-b border-muted-sage/30">
@@ -368,7 +361,9 @@ export default function MeetingDetail() {
 
               <div className="border border-muted-sage/30 p-5 bg-paper-cream/40 space-y-4">
                 <div className="flex flex-col space-y-1">
-                  <label className="text-[10px] uppercase font-mono text-muted-sage">Subject Line</label>
+                  <label className="text-[10px] uppercase font-mono text-muted-sage">
+                    Subject Line
+                  </label>
                   <input
                     type="text"
                     value={editedSubject}
@@ -377,7 +372,9 @@ export default function MeetingDetail() {
                   />
                 </div>
                 <div className="flex flex-col space-y-1">
-                  <label className="text-[10px] uppercase font-mono text-muted-sage">Email Body</label>
+                  <label className="text-[10px] uppercase font-mono text-muted-sage">
+                    Email Body
+                  </label>
                   <textarea
                     rows={12}
                     value={editedBody}
@@ -397,7 +394,10 @@ export default function MeetingDetail() {
             {meeting.participants && meeting.participants.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {meeting.participants.map((p, idx) => (
-                  <div key={idx} className="flex justify-between items-center text-sm border-b border-muted-sage/10 pb-2">
+                  <div
+                    key={idx}
+                    className="flex justify-between items-center text-sm border-b border-muted-sage/10 pb-2"
+                  >
                     <span className="text-ink-navy font-semibold">{p.name}</span>
                     <span className="text-muted-sage font-mono text-xs">{p.role || "—"}</span>
                   </div>
@@ -417,7 +417,9 @@ export default function MeetingDetail() {
               <ul className="space-y-3 text-sm">
                 {meeting.keyDecisions.map((dec, idx) => (
                   <li key={idx} className="flex items-start">
-                    <span className="text-muted-sage font-mono mr-3">{String(idx + 1).padStart(2, "0")}.</span>
+                    <span className="text-muted-sage font-mono mr-3">
+                      {String(idx + 1).padStart(2, "0")}.
+                    </span>
                     <span className="text-ink-navy leading-relaxed">{dec}</span>
                   </li>
                 ))}
@@ -481,24 +483,31 @@ export default function MeetingDetail() {
                         <td className="py-3 pr-4 font-semibold">{item.owner}</td>
                         <td className="py-3 pr-4">{item.deadline || "—"}</td>
                         <td className="py-3 pr-4">
-                          <span className={`px-1.5 py-0.5 uppercase text-[10px] border ${
-                            item.confidence === "high"
-                              ? "border-emerald-500 text-emerald-800 dark:text-emerald-400"
-                              : item.confidence === "medium"
-                              ? "border-amber-500 text-amber-800 dark:text-amber-400"
-                              : "border-gray-500 text-gray-800 dark:text-gray-400"
-                          }`}>
+                          <span
+                            className={`px-1.5 py-0.5 uppercase text-[10px] border ${
+                              item.confidence === "high"
+                                ? "border-emerald-500 text-emerald-800 dark:text-emerald-400"
+                                : item.confidence === "medium"
+                                  ? "border-amber-500 text-amber-800 dark:text-amber-400"
+                                  : "border-gray-500 text-gray-800 dark:text-gray-400"
+                            }`}
+                          >
                             {item.confidence}
                           </span>
                         </td>
                         <td className="py-3 text-right font-mono">
                           {!notionStatus.connected || !notionStatus.databaseId ? (
-                            <span className="text-muted-sage/50 text-[10px] italic">Not connected</span>
+                            <span className="text-muted-sage/50 text-[10px] italic">
+                              Not connected
+                            </span>
                           ) : (
                             <div className="inline-flex items-center justify-end space-x-2">
                               {exportStates[item._id] === "success" ? (
                                 <span className="text-emerald-700 font-bold flex items-center">
-                                  ✓ <span className="text-[10px] uppercase font-semibold ml-1">Exported</span>
+                                  ✓{" "}
+                                  <span className="text-[10px] uppercase font-semibold ml-1">
+                                    Exported
+                                  </span>
                                 </span>
                               ) : exportStates[item._id] === "failed" ? (
                                 <button
@@ -507,7 +516,10 @@ export default function MeetingDetail() {
                                   className="text-red-700 font-bold border border-red-700/20 bg-red-500/5 px-2 py-0.5 rounded hover:bg-red-500/10 cursor-pointer flex items-center"
                                   title="Export failed. Click to retry."
                                 >
-                                  ✗ <span className="text-[10px] uppercase font-semibold ml-1">Retry</span>
+                                  ✗{" "}
+                                  <span className="text-[10px] uppercase font-semibold ml-1">
+                                    Retry
+                                  </span>
                                 </button>
                               ) : exportStates[item._id] === "loading" ? (
                                 <span className="text-muted-sage animate-pulse text-[10px] uppercase font-semibold">
@@ -548,7 +560,9 @@ export default function MeetingDetail() {
                   <span className="font-bold uppercase">Preparing Registry Log for Questions</span>
                 </div>
                 <p className="font-sans leading-relaxed text-xs">
-                  This meeting transcript is currently undergoing background vector index ingestion. If this has taken longer than expected, you may manually trigger/retry indexing below.
+                  This meeting transcript is currently undergoing background vector index ingestion.
+                  If this has taken longer than expected, you may manually trigger/retry indexing
+                  below.
                 </p>
                 <div>
                   <button
@@ -575,7 +589,9 @@ export default function MeetingDetail() {
                         {/* Question Bubble */}
                         <div className="flex justify-end">
                           <div className="bg-ink-navy text-paper-cream px-4 py-2 max-w-[80%] text-sm rounded shadow-sm">
-                            <span className="font-mono text-[9px] text-muted-sage block uppercase tracking-wider mb-1">Question</span>
+                            <span className="font-mono text-[9px] text-muted-sage block uppercase tracking-wider mb-1">
+                              Question
+                            </span>
                             <span className="leading-relaxed font-sans">{turn.question}</span>
                           </div>
                         </div>
@@ -583,27 +599,38 @@ export default function MeetingDetail() {
                         {/* Answer Bubble */}
                         <div className="flex justify-start">
                           <div className="bg-paper-cream border border-muted-sage/30 text-ink-navy px-4 py-2 max-w-[80%] text-sm rounded shadow-sm w-full">
-                            <span className="font-mono text-[9px] text-muted-sage block uppercase tracking-wider mb-1">Answer</span>
+                            <span className="font-mono text-[9px] text-muted-sage block uppercase tracking-wider mb-1">
+                              Answer
+                            </span>
                             {turn.loading ? (
                               <div className="flex items-center space-x-2 text-xs font-mono text-muted-sage animate-pulse">
                                 <span>Thinking...</span>
                               </div>
                             ) : (
                               <>
-                                <span className="leading-relaxed font-sans block whitespace-pre-wrap">{turn.answer}</span>
-                                
+                                <span className="leading-relaxed font-sans block whitespace-pre-wrap">
+                                  {turn.answer}
+                                </span>
+
                                 {/* Sources citation collapse */}
                                 {turn.sources && turn.sources.length > 0 && (
                                   <div className="mt-3 pt-3 border-t border-muted-sage/20">
                                     <details className="cursor-pointer group">
                                       <summary className="text-[10px] font-mono text-muted-sage hover:text-ink-navy select-none list-none flex items-center">
-                                        <span className="inline-block transition-transform group-open:rotate-90 mr-1.5">&rarr;</span>
+                                        <span className="inline-block transition-transform group-open:rotate-90 mr-1.5">
+                                          &rarr;
+                                        </span>
                                         <span>Show Sources ({turn.sources.length})</span>
                                       </summary>
                                       <div className="mt-2 space-y-2 pl-3 border-l border-muted-sage/30 max-h-[150px] overflow-y-auto">
                                         {turn.sources.map((src, sidx) => (
-                                          <div key={sidx} className="text-[11px] font-sans text-muted-sage leading-relaxed bg-paper-cream/60 p-2 border border-muted-sage/10 rounded">
-                                            <span className="font-mono text-[9px] block uppercase font-bold text-ink-navy mb-1">Excerpt #{src.chunkIndex + 1}</span>
+                                          <div
+                                            key={sidx}
+                                            className="text-[11px] font-sans text-muted-sage leading-relaxed bg-paper-cream/60 p-2 border border-muted-sage/10 rounded"
+                                          >
+                                            <span className="font-mono text-[9px] block uppercase font-bold text-ink-navy mb-1">
+                                              Excerpt #{src.chunkIndex + 1}
+                                            </span>
                                             {src.excerpt}
                                           </div>
                                         ))}
@@ -621,7 +648,10 @@ export default function MeetingDetail() {
                 </div>
 
                 {/* Input box form */}
-                <form onSubmit={handleAsk} className="pt-4 border-t border-muted-sage/20 flex gap-2">
+                <form
+                  onSubmit={handleAsk}
+                  className="pt-4 border-t border-muted-sage/20 flex gap-2"
+                >
                   <input
                     type="text"
                     value={newQuestion}

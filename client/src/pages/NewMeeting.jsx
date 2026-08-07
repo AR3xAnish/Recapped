@@ -57,10 +57,7 @@ export default function NewMeeting() {
 
     setFile(selectedFile);
     if (!title) {
-      const nameWithoutExt = selectedFile.name.substring(
-        0,
-        selectedFile.name.lastIndexOf(".")
-      );
+      const nameWithoutExt = selectedFile.name.substring(0, selectedFile.name.lastIndexOf("."));
       setTitle(nameWithoutExt);
     }
   };
@@ -118,7 +115,8 @@ export default function NewMeeting() {
           Record Meeting Transcript
         </h1>
         <p className="text-muted-sage mt-2 text-sm leading-relaxed max-w-xl font-sans">
-          Pasted text, raw document sheets, or audio files will be loaded into the commitments database scoped to your active session.
+          Pasted text, raw document sheets, or audio files will be loaded into the commitments
+          database scoped to your active session.
         </p>
       </div>
 
@@ -129,7 +127,7 @@ export default function NewMeeting() {
       )}
 
       {/* Ledger Tabs */}
-      
+
       <div className="flex flex-wrap border-b border-muted-sage/20 mb-8 font-sans">
         <button
           type="button"
@@ -176,7 +174,6 @@ export default function NewMeeting() {
         >
           [ Upload Document ]
         </button>
-        
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">

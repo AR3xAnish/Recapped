@@ -5,7 +5,7 @@ import { Highlight } from "../App";
 
 export default function HistoryPage() {
   const navigate = useNavigate();
-  
+
   // Query params state
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -88,13 +88,16 @@ export default function HistoryPage() {
           Historical Meeting minutes
         </h1>
         <p className="text-muted-sage mt-2 text-base max-w-xl font-normal leading-relaxed">
-          A list of all digitized meeting records. Query logs by search string or organize by sorting filters.
+          A list of all digitized meeting records. Query logs by search string or organize by
+          sorting filters.
         </p>
 
         {/* Query Controls */}
         <div className="flex flex-col md:flex-row gap-4 mt-8 p-5 border border-muted-sage/20 bg-paper-cream/40 text-xs font-mono items-end">
           <div className="flex flex-col space-y-1.5 flex-grow w-full">
-            <label className="text-[10px] text-muted-sage uppercase">Search ledger logs (matches title/participant)</label>
+            <label className="text-[10px] text-muted-sage uppercase">
+              Search ledger logs (matches title/participant)
+            </label>
             <input
               type="text"
               value={search}
@@ -202,7 +205,7 @@ export default function HistoryPage() {
           >
             &larr; Previous Page
           </button>
-          
+
           <span>
             PAGE {page} OF {pagination.pages}
           </span>
