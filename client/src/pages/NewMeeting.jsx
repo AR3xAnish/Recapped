@@ -245,7 +245,7 @@ export default function NewMeeting() {
         ) : (
           <div>
             <label className="text-xs font-mono uppercase tracking-wider text-muted-sage block mb-2">
-              Transcript Audio File (.mp3, .m4a, .wav)
+              Transcript Audio File
             </label>
             <div
               onDragEnter={handleDrag}
