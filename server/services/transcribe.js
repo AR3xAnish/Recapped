@@ -93,8 +93,19 @@ async function transcribeSegment(segmentBuffer, filename, mimeType) {
     throw new Error("GROQ_API_KEY environment variable is not configured on the server.");
   }
 
+  // Normalize MIME types based on file extension for API compatibility
+  const ext = filename.split(".").pop().toLowerCase();
+  let adjustedMimeType = mimeType;
+  if (ext === "m4a") {
+    adjustedMimeType = "audio/m4a";
+  } else if (ext === "mp3") {
+    adjustedMimeType = "audio/mp3";
+  } else if (ext === "wav") {
+    adjustedMimeType = "audio/wav";
+  }
+
   const formData = new FormData();
-  const blob = new Blob([segmentBuffer], { type: mimeType });
+  const blob = new Blob([segmentBuffer], { type: adjustedMimeType });
   formData.append("file", blob, filename);
   formData.append("model", "whisper-large-v3");
   formData.append("response_format", "json");

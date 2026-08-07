@@ -56,6 +56,17 @@ export default function NewMeeting() {
     }
 
     setFile(selectedFile);
+
+    // Enforce serverless payload size limitations (4.5 MB Vercel body size limit)
+    const MAX_SIZE_BYTES = 4.5 * 1024 * 1024;
+    if (selectedFile.size > MAX_SIZE_BYTES) {
+      setError(
+        `File is too large (${(selectedFile.size / (1024 * 1024)).toFixed(2)} MB). Due to serverless platform limitations, uploaded files are capped at 4.5 MB. Please use a shorter recording or compress your audio file (e.g. converting to mono lower bitrate format).`
+      );
+      setFile(null);
+      return;
+    }
+
     if (!title) {
       const nameWithoutExt = selectedFile.name.substring(0, selectedFile.name.lastIndexOf("."));
       setTitle(nameWithoutExt);
@@ -273,7 +284,7 @@ export default function NewMeeting() {
                   <span className="text-xs text-muted-sage font-mono block">
                     {file
                       ? `(${(file.size / (1024 * 1024)).toFixed(2)} MB)`
-                      : "or click to select audio from disk (max 50MB)"}
+                      : "or click to select audio from disk (max 4.5MB)"}
                   </span>
                 </div>
               </label>
