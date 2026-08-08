@@ -9,7 +9,7 @@ const mongoose = require("mongoose");
 const Meeting = require("../models/Meeting");
 const TranscriptChunk = require("../models/TranscriptChunk");
 const { RecursiveCharacterTextSplitter } = require("@langchain/textsplitters");
-const { ChatGroq } = require("@langchain/groq");
+const { getLLM } = require("./agent/llm");
 const { ChatPromptTemplate } = require("@langchain/core/prompts");
 
 // Module-level cached variables to persist model loading state
@@ -164,11 +164,7 @@ async function askMeetingQuestion(meetingId, question) {
     .join("\n\n");
 
   // 4. Build LangChain RetrievalQA-style chain and call Groq
-  const model = new ChatGroq({
-    apiKey: process.env.GROQ_API_KEY,
-    model: "llama-3.3-70b-versatile",
-    temperature: 0,
-  });
+  const model = getLLM(0);
 
   const prompt = ChatPromptTemplate.fromMessages([
     [

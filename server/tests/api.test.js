@@ -4,6 +4,8 @@ require("dotenv").config();
 
 // Pre-populate mock environment variables for Vercel Blob to pass startup validations
 process.env.BLOB_READ_WRITE_TOKEN = process.env.BLOB_READ_WRITE_TOKEN || "mock_blob_token_12345";
+process.env.GEMINI_API_KEY = process.env.GEMINI_API_KEY || "mock_gemini_api_key_12345";
+process.env.AI_PROVIDER = process.env.AI_PROVIDER || "groq";
 
 // Mock the Vercel Blob client and helper functions
 const vercelBlobClient = require("@vercel/blob/client");

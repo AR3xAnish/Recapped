@@ -1,4 +1,4 @@
-const { ChatGroq } = require("@langchain/groq");
+const { getLLM } = require("./llm");
 const { JsonOutputParser } = require("@langchain/core/output_parsers");
 const { ChatPromptTemplate } = require("@langchain/core/prompts");
 const { z } = require("zod");
@@ -75,11 +75,7 @@ const chunkText = (text, maxWords = 5000) => {
 
 // Re-prompt model if JSON syntax parsing fails
 const repairJsonSyntax = async (originalText, parseError, retryCount) => {
-  const model = new ChatGroq({
-    apiKey: process.env.GROQ_API_KEY,
-    model: "llama-3.3-70b-versatile",
-    temperature: 0,
-  });
+  const model = getLLM(0);
 
   const prompt = ChatPromptTemplate.fromMessages([
     [
@@ -115,11 +111,7 @@ const repairJsonSyntax = async (originalText, parseError, retryCount) => {
 
 // Re-prompt model if Zod schema validation fails
 const repairZodValidation = async (originalText, invalidJson, zodError, retryCount) => {
-  const model = new ChatGroq({
-    apiKey: process.env.GROQ_API_KEY,
-    model: "llama-3.3-70b-versatile",
-    temperature: 0,
-  });
+  const model = getLLM(0);
 
   const prompt = ChatPromptTemplate.fromMessages([
     [
@@ -156,15 +148,7 @@ const repairZodValidation = async (originalText, invalidJson, zodError, retryCou
 
 // Core extraction for a single transcript chunk
 const extractFromChunk = async (text, retryCount = 0) => {
-  if (!process.env.GROQ_API_KEY) {
-    throw new Error("GROQ_API_KEY environment variable is not defined.");
-  }
-
-  const model = new ChatGroq({
-    apiKey: process.env.GROQ_API_KEY,
-    model: "llama-3.3-70b-versatile",
-    temperature: 0,
-  });
+  const model = getLLM(0);
 
   const prompt = ChatPromptTemplate.fromMessages([
     [

@@ -54,6 +54,7 @@ exports.getUploadUrl = async (req, res) => {
         return {
           tokenPayload: JSON.stringify({ userId: req.user.id }),
           callbackUrl: `${req.protocol}://${req.get("host")}/api/meetings/upload-url`,
+          addRandomSuffix: true,
         };
       },
       onUploadCompleted: async ({ blob, tokenPayload }) => {
@@ -85,9 +86,16 @@ exports.createMeeting = async (req, res) => {
 
       let fileBuffer;
       try {
-        const fetchResponse = await fetch(blobUrl);
+        const cleanToken = process.env.BLOB_READ_WRITE_TOKEN?.replace(/^["']|["']$/g, "");
+        const fetchResponse = await fetch(blobUrl, {
+          headers: {
+            Authorization: `Bearer ${cleanToken}`,
+          },
+        });
         if (!fetchResponse.ok) {
-          throw new Error(`Failed to fetch file from Blob URL: ${fetchResponse.statusText}`);
+          throw new Error(
+            `Failed to fetch file from Blob URL: ${fetchResponse.status} ${fetchResponse.statusText}`
+          );
         }
         const arrayBuffer = await fetchResponse.arrayBuffer();
         fileBuffer = Buffer.from(arrayBuffer);

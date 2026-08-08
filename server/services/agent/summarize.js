@@ -1,4 +1,4 @@
-const { ChatGroq } = require("@langchain/groq");
+const { getLLM } = require("./llm");
 const { JsonOutputParser } = require("@langchain/core/output_parsers");
 const { ChatPromptTemplate } = require("@langchain/core/prompts");
 const { z } = require("zod");
@@ -33,15 +33,7 @@ Ensure there is NO markdown wrapper (like \`\`\`json), NO backticks, and NO conv
 `;
 
 const generateSummaryAndEmail = async (rawTranscript, participants, actionItems, keyDecisions) => {
-  if (!process.env.GROQ_API_KEY) {
-    throw new Error("GROQ_API_KEY environment variable is not defined.");
-  }
-
-  const model = new ChatGroq({
-    apiKey: process.env.GROQ_API_KEY,
-    model: "llama-3.3-70b-versatile",
-    temperature: 0.3, // Slightly creative but structured
-  });
+  const model = getLLM(0.3);
 
   const prompt = ChatPromptTemplate.fromMessages([
     [
