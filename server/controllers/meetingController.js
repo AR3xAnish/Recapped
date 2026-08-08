@@ -7,6 +7,8 @@ const path = require("path");
 const { transcribeAudio } = require("../services/transcribe");
 const { extractTranscript } = require("../services/agent/extract");
 const { generateSummaryAndEmail } = require("../services/agent/summarize");
+const { handleUpload } = require("@vercel/blob/client");
+const blobStore = require("../services/blobStore");
 
 const parsePdfBuffer = (buffer) => {
   return new Promise((resolve, reject) => {
@@ -41,13 +43,71 @@ const parsePdfBuffer = (buffer) => {
   });
 };
 
+exports.getUploadUrl = async (req, res) => {
+  try {
+    const cleanToken = process.env.BLOB_READ_WRITE_TOKEN?.replace(/^["']|["']$/g, "");
+    const jsonResponse = await handleUpload({
+      body: req.body,
+      request: req,
+      token: cleanToken,
+      onBeforeGenerateToken: async (_pathname) => {
+        return {
+          tokenPayload: JSON.stringify({ userId: req.user.id }),
+          callbackUrl: `${req.protocol}://${req.get("host")}/api/meetings/upload-url`,
+        };
+      },
+      onUploadCompleted: async ({ blob, tokenPayload }) => {
+        console.log("[meetingController] Vercel Blob upload completed:", blob, tokenPayload);
+      },
+    });
+
+    res.json(jsonResponse);
+  } catch (err) {
+    console.error("[meetingController] getUploadUrl failed:", err);
+    res.status(400).json({ error: err.message });
+  }
+};
+
 exports.createMeeting = async (req, res) => {
   try {
-    let { title, transcriptText } = req.body;
+    let { title, transcriptText, blobUrl, originalName, mimeType } = req.body;
     let rawTranscript = "";
     let source = "paste";
 
-    if (req.file) {
+    if (blobUrl) {
+      source = "audio";
+      if (!title) {
+        title = path.basename(originalName, path.extname(originalName));
+      }
+      console.log(
+        `[Agent] Beginning single-step transcription for audio file from Vercel Blob: ${originalName}`
+      );
+
+      let fileBuffer;
+      try {
+        const fetchResponse = await fetch(blobUrl);
+        if (!fetchResponse.ok) {
+          throw new Error(`Failed to fetch file from Blob URL: ${fetchResponse.statusText}`);
+        }
+        const arrayBuffer = await fetchResponse.arrayBuffer();
+        fileBuffer = Buffer.from(arrayBuffer);
+      } catch (downloadErr) {
+        console.error("[Agent] Vercel Blob file download failed:", downloadErr);
+        return res.status(500).json({ error: "Failed to download audio file from cloud storage." });
+      }
+
+      try {
+        rawTranscript = await transcribeAudio(fileBuffer, originalName, mimeType);
+      } catch (transcribeError) {
+        console.error("[Agent] Vercel Blob transcription failed:", transcribeError);
+        return res.status(500).json({ error: "Transcription failed: " + transcribeError.message });
+      } finally {
+        // Clean up temporary Vercel Blob object asynchronously in the background
+        blobStore.deleteBlob(blobUrl).catch((err) => {
+          console.error("[Agent] Failed to clean up Vercel Blob object:", err);
+        });
+      }
+    } else if (req.file) {
       const file = req.file;
       const ext = path.extname(file.originalname).toLowerCase();
 

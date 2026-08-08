@@ -17,6 +17,7 @@ const requiredEnvVars = [
   "SLACK_CLIENT_SECRET",
   "SLACK_SIGNING_SECRET",
   "SLACK_REDIRECT_URI",
+  "BLOB_READ_WRITE_TOKEN",
 ];
 const missingEnvVars = requiredEnvVars.filter((v) => !process.env[v]);
 if (missingEnvVars.length > 0) {

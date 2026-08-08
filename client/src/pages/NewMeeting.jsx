@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { upload } from "@vercel/blob/client";
 import api from "../services/api";
 
 export default function NewMeeting() {
@@ -11,6 +12,8 @@ export default function NewMeeting() {
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadingToGCS, setUploadingToGCS] = useState(false);
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -47,26 +50,33 @@ export default function NewMeeting() {
         setFile(null);
         return;
       }
+      // Enforce 50 MB limit for GCS direct audio uploads
+      const MAX_AUDIO_BYTES = 50 * 1024 * 1024;
+      if (selectedFile.size > MAX_AUDIO_BYTES) {
+        setError(
+          `Audio file is too large (${(selectedFile.size / (1024 * 1024)).toFixed(2)} MB). Maximum supported audio file size is 50 MB.`
+        );
+        setFile(null);
+        return;
+      }
     } else {
       if (ext !== "txt" && ext !== "docx" && ext !== "pdf") {
         setError("Invalid file type. Only .txt, .docx, and .pdf files are supported.");
         setFile(null);
         return;
       }
+      // Enforce 4.0 MB limit for direct document uploads to prevent Vercel 413 Gateway errors
+      const MAX_DOC_BYTES = 4.0 * 1024 * 1024;
+      if (selectedFile.size > MAX_DOC_BYTES) {
+        setError(
+          `Document file is too large (${(selectedFile.size / (1024 * 1024)).toFixed(2)} MB). Due to serverless platform payload size limits, document uploads are capped at 4.0 MB.`
+        );
+        setFile(null);
+        return;
+      }
     }
 
     setFile(selectedFile);
-
-    // Enforce serverless payload size limitations (4.5 MB Vercel body size limit)
-    const MAX_SIZE_BYTES = 4.5 * 1024 * 1024;
-    if (selectedFile.size > MAX_SIZE_BYTES) {
-      setError(
-        `File is too large (${(selectedFile.size / (1024 * 1024)).toFixed(2)} MB). Due to serverless platform limitations, uploaded files are capped at 4.5 MB. Please use a shorter recording or compress your audio file (e.g. converting to mono lower bitrate format).`
-      );
-      setFile(null);
-      return;
-    }
-
     if (!title) {
       const nameWithoutExt = selectedFile.name.substring(0, selectedFile.name.lastIndexOf("."));
       setTitle(nameWithoutExt);
@@ -97,6 +107,32 @@ export default function NewMeeting() {
           title,
           transcriptText,
         });
+      } else if (activeTab === "audio") {
+        setUploadingToGCS(true);
+        setUploadProgress(0);
+
+        let blob;
+        try {
+          blob = await upload(file.name, file, {
+            access: "public",
+            handleUploadUrl: `${import.meta.env.VITE_API_URL || ""}/api/meetings/upload-url${localStorage.getItem("token") ? `?token=${encodeURIComponent(localStorage.getItem("token"))}` : ""}`,
+            onUploadProgress: (progressEvent) => {
+              setUploadProgress(progressEvent.percentage);
+            },
+          });
+        } catch (uploadErr) {
+          console.error("Vercel Blob direct upload failed:", uploadErr);
+          throw new Error("Failed to upload audio file to Vercel Blob: " + uploadErr.message);
+        }
+
+        setUploadingToGCS(false);
+
+        response = await api.post("/meetings", {
+          title,
+          blobUrl: blob.url,
+          originalName: file.name,
+          mimeType: file.type || "audio/mpeg",
+        });
       } else {
         const formData = new FormData();
         formData.append("title", title);
@@ -109,7 +145,9 @@ export default function NewMeeting() {
       }
       navigate(`/meetings/${response.data._id}`);
     } catch (err) {
-      setError(err.response?.data?.error || "Failed to create meeting registry entry.");
+      setError(
+        err.response?.data?.error || err.message || "Failed to create meeting registry entry."
+      );
     } finally {
       setSubmitting(false);
     }
@@ -284,7 +322,7 @@ export default function NewMeeting() {
                   <span className="text-xs text-muted-sage font-mono block">
                     {file
                       ? `(${(file.size / (1024 * 1024)).toFixed(2)} MB)`
-                      : "or click to select audio from disk (max 4.5MB)"}
+                      : "or click to select audio from disk (max 50MB)"}
                   </span>
                 </div>
               </label>
@@ -293,15 +331,31 @@ export default function NewMeeting() {
         )}
 
         <div className="pt-4">
+          {uploadingToGCS && (
+            <div className="mb-4">
+              <div className="flex justify-between items-center text-xs font-mono text-muted-sage mb-1">
+                <span>UPLOADING TO STORAGE:</span>
+                <span>{uploadProgress}%</span>
+              </div>
+              <div className="w-full bg-paper-cream border border-muted-sage/30 h-2 rounded-none overflow-hidden">
+                <div
+                  className="bg-ink-navy h-full transition-all duration-150"
+                  style={{ width: `${uploadProgress}%` }}
+                />
+              </div>
+            </div>
+          )}
           <button
             type="submit"
             disabled={submitting}
             className="w-full border border-ink-navy text-ink-navy py-3 text-sm font-bold tracking-wide hover:bg-ink-navy hover:text-paper-cream transition-colors duration-150 cursor-pointer disabled:opacity-50"
           >
             {submitting
-              ? activeTab === "audio"
-                ? "TRANSCRIBING YOUR AUDIO..."
-                : "RECORDING ENTRY..."
+              ? uploadingToGCS
+                ? `UPLOADING TO CLOUD (${uploadProgress}%)...`
+                : activeTab === "audio"
+                  ? "TRANSCRIBING YOUR AUDIO..."
+                  : "RECORDING ENTRY..."
               : "COMMIT TO LEDGER"}
           </button>
         </div>

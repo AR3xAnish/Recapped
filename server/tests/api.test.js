@@ -1,6 +1,24 @@
 const test = require("node:test");
 const assert = require("node:assert");
 require("dotenv").config();
+
+// Pre-populate mock environment variables for Vercel Blob to pass startup validations
+process.env.BLOB_READ_WRITE_TOKEN = process.env.BLOB_READ_WRITE_TOKEN || "mock_blob_token_12345";
+
+// Mock the Vercel Blob client and helper functions
+const vercelBlobClient = require("@vercel/blob/client");
+vercelBlobClient.handleUpload = async () => {
+  return {
+    type: "blob.generate-token",
+    clientToken: "mock-client-token-12345",
+  };
+};
+
+const blobStore = require("../services/blobStore");
+blobStore.deleteBlob = async (_blobUrl) => {
+  // Mock delete success
+};
+
 const http = require("node:http");
 const app = require("../server");
 
@@ -16,7 +34,7 @@ test("API Endpoint Integration Tests", async (t) => {
     const res = await fetch(`${baseUrl}/api/protected-test`);
     assert.strictEqual(res.status, 401);
     const body = await res.json();
-    assert.strictEqual(body.error, "Access denied. No authorization header provided.");
+    assert.strictEqual(body.error, "Access denied. No authorization token provided.");
   });
 
   // Test 2: Verify non-existent public route returns 404

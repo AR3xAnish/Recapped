@@ -20,6 +20,8 @@ const upload = multer({
   },
 });
 
+router.post("/upload-url", meetingController.getUploadUrl);
+
 router.post(
   "/",
   (req, res, next) => {

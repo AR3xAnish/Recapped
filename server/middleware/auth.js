@@ -2,20 +2,24 @@ const jwt = require("jsonwebtoken");
 
 const auth = (req, res, next) => {
   // Get token from header
+  let token;
   const authHeader = req.header("Authorization");
 
-  if (!authHeader) {
-    return res.status(401).json({ error: "Access denied. No authorization header provided." });
+  if (authHeader) {
+    const parts = authHeader.split(" ");
+    if (parts.length !== 2 || parts[0] !== "Bearer") {
+      return res
+        .status(401)
+        .json({ error: "Access denied. Invalid token format. Expected: Bearer <token>" });
+    }
+    token = parts[1];
+  } else if (req.query.token) {
+    token = req.query.token;
   }
 
-  const parts = authHeader.split(" ");
-  if (parts.length !== 2 || parts[0] !== "Bearer") {
-    return res
-      .status(401)
-      .json({ error: "Access denied. Invalid token format. Expected: Bearer <token>" });
+  if (!token) {
+    return res.status(401).json({ error: "Access denied. No authorization token provided." });
   }
-
-  const token = parts[1];
 
   try {
     const secret = process.env.JWT_SECRET || "fallback_development_secret_do_not_use_in_production";
